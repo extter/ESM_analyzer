@@ -68,7 +68,7 @@ batch_converter = alphabet.get_batch_converter()
 def get_sequence_embedding(sequence, layer):
     data = [("seq", sequence)]
     _, _, tokens = batch_converter(data)
-    tokens = tokens.to(device)
+    tokens = tokens.to(device)    
 
     out = model(tokens, repr_layers=[layer], return_contacts=False)
     reps = out["representations"][layer][0, 1:-1]  # rimuove CLS e EOS
