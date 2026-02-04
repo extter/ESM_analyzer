@@ -56,25 +56,30 @@ def generate_non_conservative_mutants(sequence, max_mutations=200):
 
 
 @torch.no_grad()
-def get_embeddings_batch(sequences, layer, batch_size=32):
+def get_embeddings_batch_multi(sequences, layers, batch_size=8):
 
-    embeddings = []
+    layer_outputs = {l: [] for l in layers}
 
     for i in range(0, len(sequences), batch_size):
 
         batch = sequences[i:i+batch_size]
-        data = [(str(j), seq) for j, seq in enumerate(batch)]
+        data = list(zip(map(str, range(len(batch))), batch))
 
         _, _, tokens = batch_converter(data)
         tokens = tokens.to(device)
 
-        out = model(tokens, repr_layers=[layer], return_contacts=False)
-        reps = out["representations"][layer][:, 1:-1]
+        out = model(tokens, repr_layers=layers, return_contacts=False)
 
-        mean_reps = reps.mean(dim=1).cpu().numpy()
-        embeddings.extend(mean_reps)
+        for l in layers:
+            reps = out["representations"][l][:, 1:-1]   # mean pooling
+            mean_reps = reps.mean(dim=1).cpu().numpy()
+            layer_outputs[l].extend(mean_reps)
 
-    return np.array(embeddings)
+    # converti tutto in numpy
+    for l in layers:
+        layer_outputs[l] = np.array(layer_outputs[l])
+
+    return layer_outputs
 
 
 LAYERS = list(range(20,34))
@@ -85,17 +90,19 @@ def run_layer_analysis(wt_seq):
     cons_mutants = generate_single_mutants(wt_seq)
     noncons_mutants = generate_non_conservative_mutants(wt_seq)
 
+    # UNA SOLA FORWARD PER TUTTO
+    wt_embs = get_embeddings_batch_multi([wt_seq], LAYERS)
+    cons_embs = get_embeddings_batch_multi(cons_mutants, LAYERS)
+    non_embs = get_embeddings_batch_multi(noncons_mutants, LAYERS)
+
     results = []
 
     for l in LAYERS:
 
-        wt_emb = get_embeddings_batch([wt_seq], l)[0]
+        wt_emb = wt_embs[l][0]
 
-        cons_embs = get_embeddings_batch(cons_mutants, l)
-        non_embs = get_embeddings_batch(noncons_mutants, l)
-
-        cons_dist = [cosine(wt_emb, e) for e in cons_embs]
-        non_dist = [cosine(wt_emb, e) for e in non_embs]
+        cons_dist = [cosine(wt_emb, e) for e in cons_embs[l]]
+        non_dist = [cosine(wt_emb, e) for e in non_embs[l]]
 
         mu_cons = np.mean(cons_dist)
         mu_non = np.mean(non_dist)
@@ -109,7 +116,7 @@ def run_layer_analysis(wt_seq):
 
 
 ###################################
-# MODELLO (una sola volta!!)
+# MODELLO 
 ###################################
 
 device = "cuda" if torch.cuda.is_available() else "cpu"

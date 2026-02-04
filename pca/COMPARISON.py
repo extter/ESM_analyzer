@@ -46,7 +46,7 @@ N_RANDOM_BASE = 500
 N_UNIREF_TEST = 500
 BATCH_SIZE = 8
 
-uniref_fasta_path = "/kaggle/input/uniref-subsample/uniref50_subsample.fasta"
+uniref_fasta_path = "../datasets/uniref50_subsample.fasta"
 
 seq_tonb = "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"
 
@@ -156,7 +156,7 @@ def get_global_embeddings_after_ipca(seqs, ipca, esm_layer):
 
     return np.array(all_vecs)
 
-OUT_DIR = "plots_mean_pooling"
+OUT_DIR = "comparison_results/plots_mean_pooling"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 
@@ -228,7 +228,7 @@ def get_global_embeddings_batch_segment_pooling(
 
     return np.vstack(all_vecs)
 
-OUT2_DIR = "plots_segment_pooling"
+OUT2_DIR = "comparison_results/plots_segment_pooling"
 os.makedirs(OUT2_DIR, exist_ok=True)
 
 
