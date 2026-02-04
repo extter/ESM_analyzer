@@ -29,8 +29,8 @@ print("==============================\n")
 
 LAYER = 28
 N_SAMPLES = 200
-MAX_MUTATIONS = 100
-BATCH_SIZE = 256
+MAX_MUTATIONS = 8
+BATCH_SIZE = 128
 SEED = 42
 
 random.seed(SEED)
