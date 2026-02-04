@@ -113,12 +113,12 @@ def get_residue_embeddings_batch(sequences):
     4. Post-processing: Rimuove i token speciali di inizio/fine sequenza e converte in numpy array.
 
     Args:
-        sequences (list of str): Lista di sequenze proteiche (es. ["MVL...", "AGL..."]).
+        sequences (list of str): Lista di sequenze proteiche.
 
     Returns:
         list of np.ndarray: Una lista dove ogni elemento è una matrice (L x D) contenente
                             gli embedding per ogni residuo della sequenza.
-                            L = lunghezza sequenza, D = dimensione embedding (es. 1280).
+                            L = lunghezza sequenza, D = dimensione embedding.
     """
     data = [("seq", s) for s in sequences]
     batch_labels, batch_strs, batch_tokens = batch_converter(data)
