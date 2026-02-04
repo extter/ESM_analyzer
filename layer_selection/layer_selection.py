@@ -126,9 +126,9 @@ batch_converter = alphabet.get_batch_converter()
 ###################################
 
 protein_paths = {
-    "betalactamase": "../sequences/beta-lactamase.txt",
+    "Betalactamase": "../sequences/beta-lactamase.txt",
     "DNAjb1": "../sequences/dnajb1.txt",
-    "gb1": "../sequences/gb1.txt",
+    "GB1": "../sequences/gb1.txt",
     "TonB": "../sequences/tonb.txt",
 }
 
