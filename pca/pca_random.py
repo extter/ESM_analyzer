@@ -169,13 +169,13 @@ print(f"Explained variance ratio (sum): {ipca.explained_variance_ratio_.sum():.4
 # ------------------------
 # 5) SALVATAGGIO
 # ------------------------
-joblib.dump(ipca, "Total_ipca_fitted.joblib")
-print("PCA salvata in Total_ipca_fitted.joblib")
+joblib.dump(ipca, "Random_ipca_fitted.joblib")
+print("PCA salvata in Random_ipca_fitted.joblib")
 
 joblib.dump({
     'pca_components': CONFIG['pca_components'],
     'n_sequences_used': len(seqs_for_pca),
     'model_name': 'esm2_t33_650M_UR50D',
     'layer_used': CONFIG['num_layer']
-}, "Total_pca_metadata.joblib")
+}, "Random_pca_metadata.joblib")
 print("Metadata salvati!")
