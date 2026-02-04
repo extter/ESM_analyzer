@@ -13,5 +13,5 @@ with open(f"{CONFIG['output_dir']}/02_random_proteins.fasta", 'w') as f:
     for i, seq in enumerate(random_proteins):
         f.write(f">random_{i} len={len(seq)}\n{seq}\n")
 
-print(f"✅ 02_random_proteins.fasta: {len(random_proteins)} sequences")
+print(f" 02_random_proteins.fasta: {len(random_proteins)} sequences")
 print(f"Mean length: {np.mean([len(seq) for seq in random_proteins]):.0f} aa")
