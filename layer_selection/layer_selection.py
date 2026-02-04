@@ -1,19 +1,19 @@
+import pandas as pd
 import torch
+import matplotlib.pyplot as plt
 import esm
 import numpy as np
-from Bio import SeqIO
 from scipy.spatial.distance import cosine
 from tqdm import tqdm
 
-wt_sequence = load_txt_sequence("/kaggle/input/betalactamase/beta-lactamase.txt")
-print("WT length:", len(wt_sequence))
 
+###################################
+# FUNZIONI
+###################################
 
 def load_txt_sequence(txt_path):
     with open(txt_path, "r") as f:
-        seq = f.read().strip()  # rimuove spazi, newline, tab
-    return seq
-    
+        return f.read().strip()
 
 
 CONSERVATIVE_MUTATIONS = {
@@ -31,29 +31,86 @@ CONSERVATIVE_MUTATIONS = {
 NON_CONSERVATIVE = ["W", "P", "G"]
 
 
-def generate_single_mutants(sequence, mutation_dict, max_per_position=1):
+def generate_single_mutants(sequence):
     mutants = []
     for i, aa in enumerate(sequence):
-        if aa in mutation_dict:
-            for new_aa in mutation_dict[aa][:max_per_position]:
+        if aa in CONSERVATIVE_MUTATIONS:
+            for new_aa in CONSERVATIVE_MUTATIONS[aa]:
                 mutated = list(sequence)
                 mutated[i] = new_aa
-                mutants.append(("cons", i, aa, new_aa, "".join(mutated)))
+                mutants.append("".join(mutated))
     return mutants
 
 
 def generate_non_conservative_mutants(sequence, max_mutations=200):
     mutants = []
     positions = np.random.choice(len(sequence), size=max_mutations, replace=False)
+
     for i in positions:
-        aa = sequence[i]
         for new_aa in NON_CONSERVATIVE:
-            if new_aa != aa:
-                mutated = list(sequence)
-                mutated[i] = new_aa
-                mutants.append(("noncons", i, aa, new_aa, "".join(mutated)))
+            mutated = list(sequence)
+            mutated[i] = new_aa
+            mutants.append("".join(mutated))
+
     return mutants
 
+
+@torch.no_grad()
+def get_embeddings_batch(sequences, layer, batch_size=32):
+
+    embeddings = []
+
+    for i in range(0, len(sequences), batch_size):
+
+        batch = sequences[i:i+batch_size]
+        data = [(str(j), seq) for j, seq in enumerate(batch)]
+
+        _, _, tokens = batch_converter(data)
+        tokens = tokens.to(device)
+
+        out = model(tokens, repr_layers=[layer], return_contacts=False)
+        reps = out["representations"][layer][:, 1:-1]
+
+        mean_reps = reps.mean(dim=1).cpu().numpy()
+        embeddings.extend(mean_reps)
+
+    return np.array(embeddings)
+
+
+LAYERS = list(range(20,34))
+
+
+def run_layer_analysis(wt_seq):
+
+    cons_mutants = generate_single_mutants(wt_seq)
+    noncons_mutants = generate_non_conservative_mutants(wt_seq)
+
+    results = []
+
+    for l in LAYERS:
+
+        wt_emb = get_embeddings_batch([wt_seq], l)[0]
+
+        cons_embs = get_embeddings_batch(cons_mutants, l)
+        non_embs = get_embeddings_batch(noncons_mutants, l)
+
+        cons_dist = [cosine(wt_emb, e) for e in cons_embs]
+        non_dist = [cosine(wt_emb, e) for e in non_embs]
+
+        mu_cons = np.mean(cons_dist)
+        mu_non = np.mean(non_dist)
+        sigma_cons = np.std(cons_dist)
+
+        ratio = mu_non / mu_cons if mu_cons > 0 else np.nan
+
+        results.append((l, mu_cons, mu_non, ratio, sigma_cons))
+
+    return results
+
+
+###################################
+# MODELLO (una sola volta!!)
+###################################
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -64,64 +121,58 @@ model.eval()
 batch_converter = alphabet.get_batch_converter()
 
 
-@torch.no_grad()
-def get_sequence_embedding(sequence, layer):
-    data = [("seq", sequence)]
-    _, _, tokens = batch_converter(data)
-    tokens = tokens.to(device)    
+###################################
+# MAIN
+###################################
 
-    out = model(tokens, repr_layers=[layer], return_contacts=False)
-    reps = out["representations"][layer][0, 1:-1]  # rimuove CLS e EOS
+protein_paths = {
+    "Betalactamase": "../sequences/beta-lactamase.txt",
+    "DNAjb1": "../sequences/dnajb1.txt",
+    "GB1": "../sequences/gb1.txt",
+    "TonB": "../sequences/tonb.txt",
+}
 
-    return reps.mean(dim=0).cpu().numpy()
+all_rows = []
 
+for name, path in protein_paths.items():
 
-LAYERS = list(range(20, 34))
+    print(f"\nRunning analysis for {name}")
 
-def run_layer_analysis(wt_seq):
-    results = {l: {"cons": [], "noncons": []} for l in LAYERS}
+    wt_sequence = load_txt_sequence(path)
+    summary = run_layer_analysis(wt_sequence)
 
-    wt_embeddings = {
-        l: get_sequence_embedding(wt_seq, l)
-        for l in LAYERS
-    }
+    for l, mu_cons, mu_non, ratio, sigma_cons in summary:
+        all_rows.append({
+            "protein": name,
+            "layer": l,
+            "mu_cons": mu_cons,
+            "mu_noncons": mu_non,
+            "ratio": ratio,
+            "sigma_cons": sigma_cons
+        })
 
-    cons_mutants = generate_single_mutants(wt_seq, CONSERVATIVE_MUTATIONS)
-    noncons_mutants = generate_non_conservative_mutants(wt_seq)
-
-    for label, i, aa, new_aa, seq in tqdm(cons_mutants):
-        for l in LAYERS:
-            emb = get_sequence_embedding(seq, l)
-            d = cosine(wt_embeddings[l], emb)
-            results[l]["cons"].append(d)
-
-    for label, i, aa, new_aa, seq in tqdm(noncons_mutants):
-        for l in LAYERS:
-            emb = get_sequence_embedding(seq, l)
-            d = cosine(wt_embeddings[l], emb)
-            results[l]["noncons"].append(d)
-
-    return results
+df = pd.DataFrame(all_rows)
 
 
-def summarize_results(results):
-    summary = []
+plt.figure(figsize=(10,6))
 
-    for l, data in results.items():
-        mu_cons = np.mean(data["cons"])
-        mu_non = np.mean(data["noncons"])
-        sigma_cons = np.std(data["cons"])
+for protein in df["protein"].unique():
+    subset = df[df["protein"] == protein]
+    plt.plot(subset["layer"], subset["ratio"], marker='o', label=protein)
 
-        ratio = mu_non / mu_cons if mu_cons > 0 else np.nan
+plt.xlabel("Layer")
+plt.ylabel("μ_noncons / μ_cons")
+plt.title("Layer sensitivity to mutations")
+plt.legend()
+plt.grid()
+plt.show()
 
-        summary.append((l, mu_cons, mu_non, ratio, sigma_cons))
 
-    return sorted(summary, key=lambda x: (-x[3], x[1]))
+mean_df = df.groupby("layer")["ratio"].mean()
 
-
-results = run_layer_analysis(wt_sequence)
-summary = summarize_results(results)
-
-print("Layer | μ_cons | μ_noncons | Ratio | σ_cons")
-for row in summary:
-    print(f"{row[0]:>5} | {row[1]:.4e} | {row[2]:.4e} | {row[3]:.2f} | {row[4]:.2e}")
+plt.plot(mean_df.index, mean_df.values, marker='o')
+plt.xlabel("Layer")
+plt.ylabel("Mean ratio")
+plt.title("Average across proteins")
+plt.grid()
+plt.show()

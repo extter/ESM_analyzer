@@ -7,3 +7,4 @@ pip install -U scikit-learn==1.7.2
 
 PCA: 4 pca were done: one on uniref, one on random sequences, one on a dataset with tonb mutations and one on all these datasets together. The datasets are present in /pca/datasets.
 
+Datasets: an important step has to be done for the uniref dataset: it has to be downloaded from ......., and the file has to be manually moved from the computer's downloads to the datasets folder. The reason for this is that github has a limit on the max file dimension, and the uniref subsample exceeds it. The file path has to be /pca/datasets/uniref50_subsample.fasta , in order for the gitignore file to be able to not include it in a future push on github. 
