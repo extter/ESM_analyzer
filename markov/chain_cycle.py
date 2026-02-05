@@ -201,6 +201,10 @@ stuck_threshold = 0  # delta medio <=0 significa catena bloccata
 while True:
     # --- Genera timestamp per file ---
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    run_dir = f"./runs/{timestamp}"
+    os.makedirs(run_dir, exist_ok=True)
+
     output_file = f"./runs/{timestamp}/sequences_over_0.9_{timestamp}.txt"
     plot_file = f"./runs/{timestamp}/similarity_plot_{timestamp}.png"
 
