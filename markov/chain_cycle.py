@@ -18,8 +18,13 @@ import torch.nn.functional as F
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-K_PROPOSALS = 4     # numero di mutazioni per step
-TOP_M = 2         # scegli tra le migliori M
+K_PROPOSALS = 8     # numero di mutazioni per step 
+TOP_M = 4         # scegli tra le migliori M
+# 8,4 per fisso 3060; 4,2 per laptop 3070
+# 3070 laptop: 100 step in circa 15 secondi con k = 4 e m = 2
+# 3060 desktop: 100 step in circa 26 secondi con k = 4 e m = 2
+# 3060 desktop: 100 step in circa 48 secondi con k = 8 e m = 4
+
 
 
 # ------------------------
@@ -196,8 +201,8 @@ stuck_threshold = 0  # delta medio <=0 significa catena bloccata
 while True:
     # --- Genera timestamp per file ---
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = f"./sequences_over_0.9_{timestamp}.txt"
-    plot_file = f"./similarity_plot_{timestamp}.png"
+    output_file = f"./runs/{timestamp}/sequences_over_0.9_{timestamp}.txt"
+    plot_file = f"./runs/{timestamp}/similarity_plot_{timestamp}.png"
 
     # --- Sequenza iniziale ---
     seq_target = "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"

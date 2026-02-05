@@ -11,4 +11,4 @@ Datasets: an important step has to be done for the uniref dataset: it has to be 
 
 When running the scripts for the first time, the esm model has to be downloaded. Later, it will be stored in .cache and be always available. It could take like 15 mins to download.
 
-FEDE E CATA: TESTARE DOMANI 5/2 I FILE DELLE PCA E CAPIRE COME ADATTARE I FILE
+FEDE E CATA: TESTARE I FILE DELLE PCA E CAPIRE COME ADATTARE I FILE
