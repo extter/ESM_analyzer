@@ -1,7 +1,11 @@
 from pathlib import Path
 
-input_file = "sequences_over_0.9.txt"
-output_fasta = "filtered_cosine_gt_095.fasta"
+# VERY IMPORTANT: AFTER THIS FILE, RUN THE FOLLOWING LINE ON THE BASH:
+# mafft --auto --thread -1 filtered_cosine_gt_095.fasta > aligned_cosine_gt_095.fasta
+
+
+input_file = "" #mettere la sequenza dalla cartella RUNS
+output_fasta = "./runs/2026.........../filtered_cosine_gt_095.fasta" #aggiustare il path con la cartella giusta in RUNS
 
 threshold = 0.965
 
