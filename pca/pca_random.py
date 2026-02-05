@@ -23,10 +23,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device in uso: {device}")
 
 CONFIG = {
-    'n_samples': 100000,  
+    'n_samples': 10,  
     'tonb_length': 239,
     'tonb_length_range': (200, 300),
-    'output_dir': './datasets/random_dataset', 
+    'output_dir': './datasets', 
     'num_layer': 28, 
     
     # Variabili per la PCA
