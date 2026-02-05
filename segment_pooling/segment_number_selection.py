@@ -1,13 +1,25 @@
+import random
+import math
+import numpy as np
+from Bio.Align import substitution_matrices
+import pandas as pd
+from tqdm import tqdm  
+import torch
+import torch.nn as nn
+from esm import pretrained
+from sklearn.decomposition import IncrementalPCA
+import joblib  # per salvare PCA
+
 layer = 28
 segment_list = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48]  # numeri di segmenti da provare
-n_random_baseline = 300            # ensemble random
-n_conservative = 300               # mutazioni conservative
+n_random_baseline = 100            # ensemble random
+n_conservative = 100               # mutazioni conservative
 
 # ------------------------
 # CARICA UNIREF50 (150–700 aa)
 # ------------------------
-uniref_fasta_path = "./datasets/uniref50_subsample.fasta"
-n_uniref = 300  # stesso ordine di grandezza degli altri baseline
+uniref_fasta_path = "../pca/datasets/uniref50_subsample.fasta"
+n_uniref = 100  # stesso ordine di grandezza degli altri baseline
 
 print("Caricamento UniRef50...")
 uniref_sequences = []
