@@ -26,7 +26,7 @@ CONFIG = {
     'n_samples': 100000,  
     'tonb_length': 239,
     'tonb_length_range': (200, 300),
-    'output_dir': './datasets/random_dataset', 
+    'output_dir': './datasets', 
     'num_layer': 28, 
     
     # Variabili per la PCA
