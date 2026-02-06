@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-
+import gc
 # Configuration
 import torch
 import esm
@@ -192,7 +192,7 @@ def cosine_similarity(vec1, vec2):
 
 beta_orig = 800
 beta = beta_orig
-n_steps = 12500
+n_steps = 7500
 threshold = 0.9
 lookback = 80   # numero di step per controllare se siamo bloccati
 stuck_threshold = 0  # delta medio <=0 significa catena bloccata
@@ -311,3 +311,7 @@ while True:
 
     print(f"Ciclo completato. File salvati:\n- {output_file}\n- {plot_file}")
     print("="*60)
+
+
+    gc.collect()
+    torch.cuda.empty_cache()
