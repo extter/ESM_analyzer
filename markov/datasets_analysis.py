@@ -94,7 +94,7 @@ def pairwise_alignment(best_sequences_file):
     print(f"📊 {n_seqs} sequenze valide")
     
     if n_seqs < 2:
-        print("❌ Almeno 2 sequenze necessarie!")
+        print("Almeno 2 sequenze necessarie!")
         return None, []
     
     # BLOSUM62
@@ -174,17 +174,17 @@ def pairwise_alignment(best_sequences_file):
 # =========================
 best_file = Path(CONFIG['output_path']) / 'best_sequences.txt'
 if best_file.exists():
-    print("📂 Uso best_sequences.txt esistente")
+    print("Uso best_sequences.txt esistente")
 else:
     n_extracted = extract_high_cosine_sequences(CONFIG)
     if n_extracted == 0:
-        print("❌ Nessuna sequenza estratta. Abbassa threshold!")
+        print("Nessuna sequenza estratta. Abbassa threshold!")
         exit()
 
 # 2. Allineamento pairwise
 df_dist, top_aligns = pairwise_alignment(best_file)
 
 print("\n🎉 PIPELINE COMPLETA!")
-print("✅ best_sequences.txt     (raw)")
-print("✅ pairwise_identity_matrix.csv  (heatmap)")
-print("✅ top_alignments.txt     (dettagli)")
+print("best_sequences.txt     (raw)")
+print("pairwise_identity_matrix.csv  (heatmap)")
+print("top_alignments.txt     (dettagli)")
