@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 
 # Leggi l'allineamento
-alignment = AlignIO.read("aligned_cosine_gt_095.fasta", "fasta") # aggiustare il path con il nome della cartella giusta in RUNS
+alignment = AlignIO.read("./runs/run_con_file_della_MSA/aligned_cosine_gt_095.fasta", "fasta") # aggiustare il path con il nome della cartella giusta in RUNS
 L = alignment.get_alignment_length()
 
 consensus = ""
@@ -37,7 +37,7 @@ print("\nConservation per posizione (frazione di sequenze che hanno il residuo c
 print(np.round(conservation, 2))
 
 
-tonb_seq = "METTI_LA_TUA_SEQUENZA_TONB_QUI"  # sequenza reale di TonB
+tonb_seq = "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"  # sequenza reale di TonB
 consensus_seq = consensus  # dal passo precedente
 
 with open("tonb_vs_consensus.fasta", "w") as f:
