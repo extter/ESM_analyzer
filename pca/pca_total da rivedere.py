@@ -20,9 +20,9 @@ import sys
 
 warnings.filterwarnings('ignore')
 
-# ==========================================
-# 0. CONFIGURAZIONE GLOBALE
-# ==========================================
+# ====================
+# 0. CONFIGURAZIONE
+# ====================
 CONFIG = {
     'uniref_dir': '/kaggle/input/uniref50-sub',
     'random_csv': '/kaggle/working/Random_dataset.csv',  
@@ -90,7 +90,7 @@ def load_csv_subsample(csv_path, target_n, name="Dataset"):
         print(f"Subsampling da {len(seqs)} a {target_n}...")
         return random.sample(seqs, target_n)
     else:
-        print(f"Trovate solo {len(seqs)} sequenze. Le prendo tutte.")
+        print(f"Trovate solo {len(seqs)} sequenze")
         return seqs
 
 if not os.path.exists(CONFIG['final_csv']):
