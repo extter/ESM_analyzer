@@ -12,6 +12,10 @@ conda create -n bio python=3.11.13
 pip install torch fair-esm biopython numpy scipy tqdm pandas joblib seaborn "fastcore<1.9,>=1.8.0" fastai==2.8.4
 pip install -U scikit-learn==1.7.2
 ```
+Then do :
+```bash
+conda activate bio
+```
 
 > ⚠️ **Note:**
 > When running the Python scripts for the first time, the **ESM model** will be downloaded automatically (about 15 minutes).
@@ -64,7 +68,7 @@ Datasets are stored in:
 
 #### 🧩 Datasets
 
-- The **uniref50 subsample** must be downloaded manually from (due to GitHub file size limitation).
+- The **uniref50 subsample** must be downloaded manually from [this Kaggle link](https://www.kaggle.com/datasets/dannyahn/uniref50-sub)  (due to GitHub file size limitation).
 - Move the downloaded file to:
 
 ```
