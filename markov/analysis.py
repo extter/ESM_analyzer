@@ -4,8 +4,8 @@ from pathlib import Path
 # mafft --auto --thread -1 filtered_cosine_gt_095.fasta > aligned_cosine_gt_095.fasta
 
 
-input_file = "" #mettere la sequenza dalla cartella RUNS
-output_fasta = "./runs/2026.........../filtered_cosine_gt_095.fasta" #aggiustare il path con la cartella giusta in RUNS
+input_file = "./runs/run_con_file_della_MSA/sequences_over_0.9.txt" #mettere la sequenza dalla cartella RUNS
+output_fasta = "./runs/run_con_file_della_MSA/filtered_cosine_gt_095.fasta" #aggiustare il path con la cartella giusta in RUNS
 
 threshold = 0.965
 
