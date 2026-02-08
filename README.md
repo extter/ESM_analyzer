@@ -1,29 +1,159 @@
-INSTRUCTIONS ON HOW TO CORRECTLY USE THIS REPO:
 
-Preliminary step: Run the following lines to create the required environment:
+***
+
+# 🧬 ESM Analyzer — TonB Protein Embedding \& Evolution Simulation
+
+## ⚙️ Preliminary Setup
+
+Before running any scripts, set up your environment with the following commands:
+
+```bash
 conda create -n bio python=3.11.13
 pip install torch fair-esm biopython numpy scipy tqdm pandas joblib seaborn "fastcore<1.9,>=1.8.0" fastai==2.8.4
 pip install -U scikit-learn==1.7.2
+```
 
-FOLDERS:
+> ⚠️ **Note:**
+> When running the Python scripts for the first time, the **ESM model** will be downloaded automatically (about 15 minutes).
+> After that, it will be cached in the `.cache/` directory.
 
-sequences:
-has the txt files with the sequences of TonB and other proteins inside.
+***
 
-layer_selection: 
-The folder contains a script that will create a number of conservative and non conservative mutations, then will give the ratio between the cosine similarities in embeddings between TonB and mutants, for each layer from 20 to 33. The number of layers has to be chosen in order not to be in a highly anisotropic space (such as the one after layer 33), and has also to be a significative layer, so not too close to the internal ones. For reference, layer 28 was used for the TonB analysis. 
+## 📂 Folder Structure
 
-cosine_similarity:
-Creates histograms of the cosine similarity, for different number of TonB mutations. (Uses mean pooling!)
+### `sequences/`
 
-pca: 
-4 PCAs were done: one on an uniref50 subsample, one on random sequences, one on a dataset with tonb mutations and one on all these datasets together (50k each). The datasets are present in ESM_analyzer/pca/datasets.
-Datasets: an important step has to be done for the uniref dataset: it has to be downloaded from ......., and the file has to be manually moved from the computer's downloads to the ESM_analyzer/pca/datasets folder. The reason for this is that github has a limit on the max file dimension, and the uniref subsample exceeds it. The file path HAS to be /pca/datasets/uniref50_subsample.fasta , in order for the gitignore file to be able to not include it in a future push on github. Spiega ancora come funziona ecc ecc FEDE E CATA: TESTARE I FILE DELLE PCA E CAPIRE COME ADATTARE I FILE
+Contains text files with the amino acid sequences of **TonB** and other proteins.
 
-segment_pooling: 
-Mean pooling on the residue embeddings was discarded as an option, since it compresses all the information and projects all the embeddings in a very narrow cone in the embedding space. Thus, a segment-based pooling technique was used: the residues are embedded, then the residue embeddings are grouped together in segments (POSSIBLE FUTURE IDEA: segmentation of the sequence with respect to the domains), then the mean pooling is done within the segments, then they are normalized. The cosine similarity between 2 sequences is then given by the MEAN of the cosine similarities of corresponding SEGMENTS. The file test.py can be used to test if the environment and the segment pooling works, while segment_number_selection.py looks at how far apart are conservative and non conservative mutations, for different segment numbers. Small number of segments -> more averaging and less local information. High number of segments -> more info on local features, but also more noise.
+***
 
-markov:
+### `layer_selection/`
 
-When running the scripts for the first time, the esm model has to be downloaded. Later, it will be stored in .cache and be always available. It could take like 15 mins to download.
+This script:
+
+- Generates **conservative** and **non-conservative** mutations.
+- Computes the **ratio between cosine similarities** (TonB vs. mutants).
+- Analyzes multiple ESM layers (**20 to 33**).
+
+> 💡 **Tip:**
+> - Avoid layers beyond 33 — they are highly **anisotropic**.
+> - Avoid very early layers — they contain little biological meaning.
+> - For reference, **layer 28** was used in the TonB analysis.
+
+***
+
+### `cosine_similarity/`
+
+Creates **histograms** of cosine similarity for varying numbers of TonB mutations.
+
+> Uses **mean pooling** as the embedding aggregation method.
+
+***
+
+### `pca/`
+
+Performs **Principal Component Analyses (PCA)** on four datasets:
+
+1. `uniref50` subsample
+2. Random sequences
+3. TonB mutations
+4. Combined dataset (50k samples from each)
+
+Datasets are stored in:
+`ESM_analyzer/pca/datasets/`
+
+#### 🧩 Datasets
+
+- The **uniref50 subsample** must be downloaded manually from (due to GitHub file size limitation).
+- Move the downloaded file to:
+
+```
+/pca/datasets/uniref50_subsample.fasta
+```
+
+> ⚠️ The path **must be exact**, so that `.gitignore` can exclude it correctly during future commits.
+
+other stuff on the pca.....
+
+***
+
+### `segment_pooling/`
+
+**Mean pooling** was discarded because it collapses embeddings into a **narrow cone** in embedding space.
+
+Instead, this module implements **segment-based pooling**:
+
+1. Embed residues individually.
+2. Divide embeddings into **segments** (possibly by domains).
+3. Apply **mean pooling** within segments.
+4. **Normalize** segment embeddings.
+5. Compute sequence similarity as the **mean cosine similarity** of corresponding segments.
+
+#### 🧪 Files
+
+- `test.py` — Checks environment setup and verifies segment pooling functionality.
+- `segment_number_selection.py` — Evaluates distances between conservative and non-conservative mutations for various segment counts.
+
+> 📈 **Tradeoff:**
+> - Fewer segments → more averaging, less local detail.
+> - More segments → higher resolution, more noise.
+
+***
+
+### `markov/` *(Core module)*
+
+The **heart of the project**: a simulation of protein evolution in embedding space using **Markov Chains**.
+
+#### Main Script: `chain_cycle.py`
+
+- Operates in the **PCA-transformed embedding space** (640 components).
+- **Cosine similarity** computed using segment-based pooling.
+- Starts from a random **239–AA sequence**.
+
+
+#### 🔁 Algorithm Details
+
+- **Mutations per step:** `K_PROPOSALS = 8`
+- **Insertion/deletion rate:** 1% each
+- **Scoring model:** `BLOSUM62`, temperature = 1.7
+- **Selection:** Choose randomly from **TOP_M = 4** top candidates
+- **Acceptance rule:**
+    - If Δ(cosine) > 0 → accept
+    - If Δ(cosine) < 0 → accept with **Metropolis criterion** (β = 800)
+- If similarity plateaus for **lookback = 80** steps → reduce β to 100 to escape local minima
+
+
+#### 🧭 Simulation Parameters
+
+- Default steps: **7,500**
+- Convergence typically around steps **4,000–5,000**
+- Saves sequences with **cosine similarity > 0.90**
+
+Each run generates:
+
+- A **graph** of the Markov chain (≈10 min)
+- A **.txt file** with high-similarity sequences
+- Stored under: `ESM_analyzer/markov/runs/`
+
+> 🧠 If the folder lacks a `.txt` file, the simulation did not reach 0.9 similarity.
+
+***
+
+### ⚡ Performance Benchmarks
+
+| Device | GPU RAM | Speed (100 steps, k=8, m=4) |
+| :-- | :-- | :-- |
+| RTX 3070 Laptop | 8 GB | ~40 s |
+| RTX 3060 Desktop | 12 GB | ~48 s |
+| Kaggle Notebook (2×T4 GPUs) | max 15 Gb per GPU (?) | ~100 s |
+
+
+***
+
+## 🧪 Project Status
+
+**Analysis section:** *Under construction... MSA for allignment of the plateau region ......*
+
+***
+
 
