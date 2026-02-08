@@ -5,16 +5,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from transformers import EsmTokenizer, EsmModel, EsmForMaskedLM
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from Bio import SeqIO
 import random
-
-import time
 import torch
 from tqdm import tqdm
-import psutil
 import sys
 import warnings
 import torch.nn as nn
