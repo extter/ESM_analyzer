@@ -28,7 +28,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device in uso: {device}")
 
 CONFIG = {
-    'uniref_dir': './datasets/uniref50_subsample.fasta',
+    'fasta_path': './datasets/uniref50_subsample.fasta',
     'random_csv': './datasets/Random_dataset.csv',  
     'tonb_csv': './datasets/TonB_mutations_dataset.csv',
     
@@ -51,7 +51,7 @@ np.random.seed(CONFIG['random_seed'])
 # 1) FUNZIONI CARICAMENTO DATASET
 # ------------------------
 
-def load_uniref_subsample(input_dir, target_n, length_range):
+def load_uniref_subsample(fasta_path, target_n, length_range):
     """Carica un campione casuale da un file FASTA filtrato per lunghezza."""
     if not os.path.exists(fasta_path):
         raise FileNotFoundError(f"File FASTA non trovato: {fasta_path}")
@@ -80,7 +80,7 @@ def load_csv_subsample(csv_path, target_n):
 
 if not os.path.exists(CONFIG['final_csv']):
     print("Generazione dataset bilanciato...")
-    u_seqs = load_uniref_subsample(CONFIG['uniref_dir'], CONFIG['samples_per_category'], CONFIG['seq_len_range'])
+    u_seqs = load_uniref_subsample(CONFIG['fasta_path'], CONFIG['samples_per_category'], CONFIG['seq_len_range'])
     r_seqs = load_csv_subsample(CONFIG['random_csv'], CONFIG['samples_per_category'])
     t_seqs = load_csv_subsample(CONFIG['tonb_csv'], CONFIG['samples_per_category'])
     
@@ -144,6 +144,9 @@ for i in tqdm(range(0, len(sequences), CONFIG['pca_batch_size']), desc="PCA Fitt
         del X_batch, emb_list
     except Exception as e:
         print(f"Errore nel batch {i}: {e}")
+
+print("IncrementalPCA fit completato!")
+print(f"Explained variance ratio (sum): {ipca.explained_variance_ratio_.sum():.4f}")
 
 # ------------------------
 # 5) SALVATAGGIO
