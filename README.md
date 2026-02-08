@@ -1,7 +1,7 @@
 
 ***
 
-# 🧬 ESM Analyzer — TonB Protein Embedding \& Evolution Simulation
+# 🧬 ESM Analyzer — TonB (and maybe DNAjb1) Protein Embedding \& Evolution Simulation
 
 ## ⚙️ Preliminary Setup
 
