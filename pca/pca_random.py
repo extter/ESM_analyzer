@@ -27,6 +27,7 @@ CONFIG = {
     'tonb_length': 239,
     'tonb_length_range': (200, 300),
     'output_dir': './datasets', 
+    'joblib_dir': './joblibs',
     'num_layer': 28, 
     
     # Variabili per la PCA
@@ -169,13 +170,16 @@ print(f"Explained variance ratio (sum): {ipca.explained_variance_ratio_.sum():.4
 # ------------------------
 # 5) SALVATAGGIO
 # ------------------------
-joblib.dump(ipca, "Random_ipca_fitted.joblib")
-print("PCA salvata in Random_ipca_fitted.joblib")
 
+pca_filename = os.path.join(CONFIG['joblib_dir'], "Random_ipca_fitted.joblib")
+meta_filename = os.path.join(CONFIG['joblib_dir'], "Random_pca_metadata.joblib")
+
+joblib.dump(ipca, pca_filename)
 joblib.dump({
     'pca_components': CONFIG['pca_components'],
     'n_sequences_used': len(seqs_for_pca),
     'model_name': 'esm2_t33_650M_UR50D',
     'layer_used': CONFIG['num_layer']
-}, "Random_pca_metadata.joblib")
-print("Metadata salvati!")
+}, meta_filename)
+
+print("Metadata e PCA salvati!")

@@ -1,77 +1,73 @@
-import gc
 import os
+# Ottimizzazione memoria CUDA
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
-from Bio import SeqIO
+
 import random
 import torch
-from tqdm import tqdm
-import sys
-import warnings
 import torch.nn as nn
+import esm
+import pandas as pd
+import numpy as np
+from tqdm import tqdm
 from sklearn.decomposition import IncrementalPCA
+from Bio import SeqIO
 import joblib
-import esm.pretrained as pretrained
+import gc
+import warnings
+
 warnings.filterwarnings('ignore')
 
-def print_overwrite(text):
-    sys.stdout.write('\r\033[K' + text)
-    sys.stdout.flush()
-
-input_dir = '/kaggle/input/uniref'
-fasta_files = [f for f in os.listdir(input_dir) if f.endswith(('.fasta', '.fa', '.fasta.gz'))]
-print("File FASTA trovati:", fasta_files)
-
-fasta_file = os.path.join(input_dir, fasta_files[0])  # Prendi il primo
-print(f"Usando: {fasta_file}")
-
-print("Estrazione subsample sequenze 150-700 AA...")
-random.seed(42)
-target_n = 100000
-sequences = []  # Lista (id, sequenza)
-short_records = []
-
-with open(fasta_file, 'r') as handle:
-    parser = SeqIO.parse(handle, 'fasta')
-    for record in parser:
-        if len(record.seq) > 150 and len(record.seq) < 700: # Modificato per 150-700 AA
-            short_records.append(record)
-        if len(short_records) >= target_n * 2:  # Buffer
-            break
-
-print(f"Trovate {len(short_records)} proteine nel range 150-700 AA")
-
-# Random subsample dalle corte
-subsample_records = random.sample(short_records, min(target_n, len(short_records)))
-sequences = [(record.id, str(record.seq)) for record in subsample_records]
-
-print(f"✓ {len(sequences)} sequenze salvate")
-print(f"Media lunghezza: {np.mean([len(s[1]) for s in sequences]):.0f} AA")
-print(f"Max: {max(len(s[1]) for s in sequences)} AA")
-print(f"Tot AA: {sum(len(s[1]) for s in sequences)/1e6:.1f}M")
-print("Esempio:", sequences[0])
-
 # ------------------------
-# CONFIG (invariato)
+# 0) SETUP E VARIABILI 
 # ------------------------
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-pca_components = 640
-pca_batch_size = 64
-max_seqs_for_pca = 100000
+print(f"Device in uso: {device}")
 
-seqs_for_pca = [seq for _, seq in sequences[:max_seqs_for_pca]]  # Da sequences corrente!
-print(f"Usando {len(seqs_for_pca)} sequenze correnti")
+CONFIG = {
+    'input_dir': './datasets/uniref50_subsample.fasta'',
+    'joblibs_dir':'./joblibs'
+    'target_n': 100000,
+    'seq_len_range': (150, 700),
+    'num_layer': 28,
+    
+    'pca_components': 640,
+    'pca_batch_size': 64,
+    'random_seed': 42
+}
 
-print(seqs_for_pca[0])
+random.seed(CONFIG['random_seed'])
+np.random.seed(CONFIG['random_seed'])
 
 # ------------------------
-# CARICA MODELLO ESM2 + DataParallel (invariato)
+# 1) CARICAMENTO E SUBSAMPLING
 # ------------------------
+def get_fasta_subsample(input_dir, target_n, length_range):
+    """Estrae un subsample casuale di sequenze da file FASTA nel range indicato."""
+    fasta_files = [f for f in os.listdir(input_dir) if f.endswith(('.fasta', '.fa', '.fasta.gz'))]
+    if not fasta_files: raise FileNotFoundError("Nessun file FASTA trovato.")
+    
+    fasta_path = os.path.join(input_dir, fasta_files[0])
+    print(f"Lettura da: {fasta_path}")
+    
+    valid_records = []
+    min_l, max_l = length_range
+    
+    with open(fasta_path, 'r') as handle:
+        for record in SeqIO.parse(handle, 'fasta'):
+            if min_l < len(record.seq) < max_l:
+                valid_records.append(str(record.seq))
+                if len(valid_records) >= target_n * 2: break # Buffer per shuffle
+    
+    return random.sample(valid_records, min(target_n, len(valid_records)))
+
+sequences = get_fasta_subsample(CONFIG['input_dir'], CONFIG['target_n'], CONFIG['seq_len_range'])
+random.shuffle(sequences)
+
+print(f"{len(sequences)} sequenze caricate")
+print(f"Media lunghezza: {np.mean([len(s) for s in sequences]):.0f} AA")
+# ----------------------
+# CARICA MODELLO ESM2 
+# ----------------------
 model, alphabet = pretrained.esm2_t33_650M_UR50D()
 model = model.to(device)
 model.eval()
@@ -83,16 +79,24 @@ if torch.cuda.device_count() > 1:
 else:
     print("Uso una sola GPU")
 
-def get_num_layers(model):
-    if isinstance(model, nn.DataParallel):
-        return model.module.num_layers
-    else:
-        return model.num_layers
-
-# ------------------------
-# FUNZIONI EMBEDDING (invariato)
-# ------------------------
+# ---------------------
+# FUNZIONI EMBEDDING 
+# ---------------------
 def forward_with_single_gpu_if_small_batch(model, tokens, **kwargs):
+    """
+    Esegue il forward pass del modello gestendo il caso limite di batch_size=1 con DataParallel.
+    
+    Quando si usa nn.DataParallel con un batch di dimensione 1, PyTorch può sollevare errori
+    o comportarsi in modo inefficiente perché tenta di dividere il batch tra le GPU.
+
+    Args:
+        model (nn.Module): Il modello PyTorch (può essere avvolto in DataParallel).
+        tokens (torch.Tensor): Il tensore dei token di input.
+        **kwargs: Argomenti aggiuntivi da passare al modello (es. repr_layers).
+
+    Returns:
+        dict: L'output del modello ESM (contiene 'logits', 'representations', etc.).
+    """
     if isinstance(model, nn.DataParallel) and tokens.shape[0] == 1:
         single_model = model.module.to("cuda:0")
         return single_model(tokens.to("cuda:0"), **kwargs)
@@ -101,6 +105,24 @@ def forward_with_single_gpu_if_small_batch(model, tokens, **kwargs):
 
 @torch.no_grad()
 def get_residue_embeddings_batch(sequences):
+    """
+    Calcola gli embedding per un batch di sequenze proteiche usando ESM-2.
+
+    Questa funzione esegue i seguenti passaggi:
+    1. Tokenizzazione: Converte le stringhe di amminoacidi in token numerici.
+    2. Inferenza: Passa i token al modello ESM-2 (su GPU).
+    3. Estrazione: Recupera le rappresentazioni interne (hidden states) dal layer specificato.
+    4. Post-processing: Rimuove i token speciali di inizio/fine sequenza e converte in numpy array.
+
+    Args:
+        sequences (list of str): Lista di sequenze proteiche.
+
+    Returns:
+        list of np.ndarray: Una lista dove ogni elemento è una matrice (L x D) contenente
+                            gli embedding per ogni residuo della sequenza.
+                            L = lunghezza sequenza, D = dimensione embedding.
+    """
+
     data = [("seq", s) for s in sequences]
     batch_labels, batch_strs, batch_tokens = batch_converter(data)
     batch_tokens = batch_tokens.to(device)
@@ -110,7 +132,7 @@ def get_residue_embeddings_batch(sequences):
         model, batch_tokens, repr_layers=[28], return_contacts=False
     )
     
-    token_reps = out["representations"][28]  # Usa il layer 28
+    token_reps = out["representations"][28] 
     
     emb_list = []
     for i, seq in enumerate(batch_strs):
@@ -119,39 +141,40 @@ def get_residue_embeddings_batch(sequences):
         emb_list.append(emb)
     return emb_list
 
-random.shuffle(seqs_for_pca)  # <--- aggiungi questo
+random.shuffle(seqs_for_pca) 
 print(f"Usando {len(seqs_for_pca)} sequenze correnti (mescolate)")
 
 # ------------------------
-# 1) FIT INCREMENTAL PCA (invariato)
+# 4) FIT INCREMENTAL PCA
 # ------------------------
-print("Inizio IncrementalPCA (solo fit)...")
-ipca = IncrementalPCA(n_components=pca_components, batch_size=None)
+print(f"Inizio IncrementalPCA su {len(sequences)} sequenze...")
+ipca = IncrementalPCA(n_components=CONFIG['pca_components'])
 
-for i in tqdm(range(0, len(seqs_for_pca), pca_batch_size), desc="Fit IncrementalPCA"):
-    torch.cuda.empty_cache()
-    #gc.collect()  # <--- aggiungi questo
-    batch_seqs = seqs_for_pca[i:i+pca_batch_size]
-    emb_list = get_residue_embeddings_batch(batch_seqs)
-    X_batch = np.concatenate(emb_list, axis=0)
-    ipca.partial_fit(X_batch)
+for i in tqdm(range(0, len(sequences), CONFIG['pca_batch_size']), desc="PCA Fitting"):
+    torch.cuda.empty_cache() # Libera memoria GPU ad ogni batch
+    batch_seqs = sequences[i : i + CONFIG['pca_batch_size']]
+    
+    try:
+        emb_list = get_residue_embeddings_batch(batch_seqs)
+        X_batch = np.concatenate(emb_list, axis=0)
+        ipca.partial_fit(X_batch)
+        del X_batch, emb_list
+    except Exception as e:
+        print(f"Errore nel batch {i}: {e}")
 
-print("IncrementalPCA fit completato!")
-print("Explained variance ratio (sum):", ipca.explained_variance_ratio_.sum())
+print(f"Fit completato. Varianza totale spiegata: {ipca.explained_variance_ratio_.sum():.4f}")
 
 # ------------------------
-# 2) SALVA PCA (NUOVO - FINE CODICE!)
+# 5) SALVATAGGIO
 # ------------------------
-joblib.dump(ipca, "TonB_ipca_fitted_640comp.joblib")
-print("✅ PCA salvata in TonB_ipca_fitted_640comp.joblib")
+pca_path = os.path.join(CONFIG['joblibs_dir'], "Uniref_ipca_fitted.joblib")
+meta_path = os.path.join(CONFIG['joblibs_dir'], "Uniref_pca_metadata.joblib")
 
-
-# Metadati
+joblib.dump(ipca, pca_path)
 joblib.dump({
-    'pca_components': pca_components,
-    'n_sequences_used': len(seqs_for_pca),
+    'pca_components': CONFIG['pca_components'],
     'model_name': 'esm2_t33_650M_UR50D',
-    'layer_used': get_num_layers(model),  # <--- layer info
-    'mean_seq_len': np.mean([len(s) for s in seqs_for_pca]),
-    'date': pd.Timestamp.now().isoformat()
-}, "TonB_pca_metadata.joblib")
+    'layer_used': CONFIG['num_layer']
+}, meta_path)
+
+print(f"PCA e Metadati salvati in {CONFIG['joblibs_dir']}")
