@@ -84,7 +84,7 @@ Datasets are stored in:
 #### Dimensionality Reduction (PCA)
 To reduce the anisotropy of the protein embedding space , we implemented a scalable dimensionality reduction pipeline:
 
-- **Feature Extraction**: Residue-level embeddings are extracted from the 28th layer of ESM-2 (650M), yielding a 1280-dimensional latent space for each amino acid
+- **Feature Extraction**: Residue-level embeddings are extracted from the 28th layer of ESM-2, yielding a 1280-dimensional latent space for each amino acid
 
 - **Incremental PCA (IPCA)**: Given the massive scale of the dataset (millions of residues), we utilized an incremental approach
 
