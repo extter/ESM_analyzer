@@ -28,12 +28,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device in uso: {device}")
 
 CONFIG = {
-    'uniref_dir': '/kaggle/input/uniref50-sub',
-    'random_csv': '/kaggle/working/Random_dataset.csv',  
-    'tonb_csv': '/kaggle/input/mutations-of-tonb/TonB_mutations_dataset.csv',
+    'uniref_dir': './datasets/uniref50_subsample.fasta',
+    'random_csv': './datasets/Random_dataset.csv',  
+    'tonb_csv': './datasets/TonB_mutations_dataset.csv',
     
-    'final_csv': '/kaggle/working/dataset_proteine_balanced_150k.csv',
-    'output_dir': './joblibs', # Cartella per i modelli salvati
+    'final_csv': './datasets/dataset_proteine_balanced_150k.csv',
+    'output_dir': './joblibs',
     'samples_per_category': 50000,
     'seq_len_range': (150, 700), 
     
@@ -52,17 +52,22 @@ np.random.seed(CONFIG['random_seed'])
 # ------------------------
 
 def load_uniref_subsample(input_dir, target_n, length_range):
-    """Carica un campione casuale da UniRef filtrato per lunghezza"""
-    fasta_files = [f for f in os.listdir(input_dir) if f.endswith(('.fasta', '.fa'))]
-    if not fasta_files: raise FileNotFoundError("Nessun file FASTA trovato.")
+    """Carica un campione casuale da un file FASTA filtrato per lunghezza."""
+    if not os.path.exists(fasta_path):
+        raise FileNotFoundError(f"File FASTA non trovato: {fasta_path}")
     
     valid_records = []
     min_len, max_len = length_range
-    with open(os.path.join(input_dir, fasta_files[0]), 'r') as handle:
+    
+    with open(fasta_path, 'r') as handle:
         for record in SeqIO.parse(handle, 'fasta'):
             if min_len <= len(record.seq) <= max_len:
                 valid_records.append(str(record.seq))
-                if len(valid_records) >= target_n * 3: break
+                if len(valid_records) >= target_n * 3: 
+                    break
+    
+    if not valid_records:
+        return []
     
     return random.sample(valid_records, min(target_n, len(valid_records)))
 
