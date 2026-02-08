@@ -8,6 +8,7 @@ import torch.nn as nn
 import esm
 import pandas as pd
 import numpy as np
+from esm import pretrained
 from tqdm import tqdm
 from sklearn.decomposition import IncrementalPCA
 from Bio import SeqIO
@@ -24,9 +25,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device in uso: {device}")
 
 CONFIG = {
-    'input_dir': './datasets/uniref50_subsample.fasta'',
-    'joblibs_dir':'./joblibs'
-    'target_n': 100000,
+    'fasta_path': './datasets/uniref50_subsample.fasta',
+    'joblibs_dir':'./joblibs',
+    'target_n': 20,
     'seq_len_range': (150, 700),
     'num_layer': 28,
     
@@ -41,26 +42,30 @@ np.random.seed(CONFIG['random_seed'])
 # ------------------------
 # 1) CARICAMENTO E SUBSAMPLING
 # ------------------------
-def get_fasta_subsample(input_dir, target_n, length_range):
-    """Estrae un subsample casuale di sequenze da file FASTA nel range indicato."""
-    fasta_files = [f for f in os.listdir(input_dir) if f.endswith(('.fasta', '.fa', '.fasta.gz'))]
-    if not fasta_files: raise FileNotFoundError("Nessun file FASTA trovato.")
+def get_fasta_subsample(fasta_path, target_n, length_range):
+    """Estrae un subsample casuale di sequenze direttamente da un file FASTA."""
+    if not os.path.exists(fasta_path):
+        raise FileNotFoundError(f"File non trovato: {fasta_path}")
     
-    fasta_path = os.path.join(input_dir, fasta_files[0])
-    print(f"Lettura da: {fasta_path}")
-    
+    print(f"Lettura sequenze da: {fasta_path}")
     valid_records = []
     min_l, max_l = length_range
     
+    # Leggiamo il file direttamente
     with open(fasta_path, 'r') as handle:
         for record in SeqIO.parse(handle, 'fasta'):
             if min_l < len(record.seq) < max_l:
                 valid_records.append(str(record.seq))
-                if len(valid_records) >= target_n * 2: break # Buffer per shuffle
+                # Buffer per garantire un buon campionamento casuale
+                if len(valid_records) >= target_n * 2: 
+                    break
     
+    if not valid_records:
+        raise ValueError("Nessuna sequenza trovata nel range di lunghezza specificato.")
+        
     return random.sample(valid_records, min(target_n, len(valid_records)))
 
-sequences = get_fasta_subsample(CONFIG['input_dir'], CONFIG['target_n'], CONFIG['seq_len_range'])
+sequences = get_fasta_subsample(CONFIG['fasta_path'], CONFIG['target_n'], CONFIG['seq_len_range'])
 random.shuffle(sequences)
 
 print(f"{len(sequences)} sequenze caricate")
@@ -124,26 +129,19 @@ def get_residue_embeddings_batch(sequences):
     """
 
     data = [("seq", s) for s in sequences]
-    batch_labels, batch_strs, batch_tokens = batch_converter(data)
+    _, batch_strs, batch_tokens = batch_converter(data)
     batch_tokens = batch_tokens.to(device)
 
-    num_layers = get_num_layers(model)
+    # CORREZIONE: Passiamo CONFIG['num_layer'] come keyword argument esplicito
     out = forward_with_single_gpu_if_small_batch(
-        model, batch_tokens, repr_layers=[28], return_contacts=False
+        model, 
+        batch_tokens, 
+        repr_layers=[CONFIG['num_layer']], 
+        return_contacts=False
     )
     
-    token_reps = out["representations"][28] 
-    
-    emb_list = []
-    for i, seq in enumerate(batch_strs):
-        L = len(seq)
-        emb = token_reps[i, 1:1+L].detach().cpu().numpy()
-        emb_list.append(emb)
-    return emb_list
-
-random.shuffle(seqs_for_pca) 
-print(f"Usando {len(seqs_for_pca)} sequenze correnti (mescolate)")
-
+    token_reps = out["representations"][CONFIG['num_layer']]
+    return [token_reps[i, 1:1+len(s)].detach().cpu().numpy() for i, s in enumerate(batch_strs)]
 # ------------------------
 # 4) FIT INCREMENTAL PCA
 # ------------------------

@@ -32,7 +32,7 @@ CONFIG = {
     
     # Variabili per la PCA
     'max_seqs_for_pca': 100000, 
-    'pca_components': 128,
+    'pca_components': 640,
     'pca_batch_size': 64    
 }
 
