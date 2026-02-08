@@ -1,9 +1,9 @@
 
 ***
 
-# 🧬 ESM Analyzer — TonB (and maybe DNAjb1) Protein Embedding \& Evolution Simulation
+# ESM Analyzer — TonB (and maybe DNAjb1) Protein Embedding \& Evolution Simulation
 
-## ⚙️ Preliminary Setup
+## Preliminary Setup
 
 Before running any scripts, set up your environment with the following commands:
 
@@ -23,7 +23,7 @@ conda activate bio
 
 ***
 
-## 📂 Folder Structure
+##  Folder Structure
 
 ### `sequences/`
 
@@ -39,8 +39,8 @@ This script:
 - Computes the **ratio between cosine similarities** (TonB vs. mutants).
 - Analyzes multiple ESM layers (**20 to 33**).
 
-> 💡 **Tip:**
-> - Avoid layers beyond 33 — they are highly **anisotropic**.
+>  **Tip:**
+> - Avoid layers 33 — it is highly **anisotropic**.
 > - Avoid very early layers — they contain little biological meaning.
 > - For reference, **layer 28** was used in the TonB analysis.
 
@@ -66,7 +66,7 @@ Performs **Principal Component Analyses (PCA)** on four datasets:
 Datasets are stored in:
 `ESM_analyzer/pca/datasets/`
 
-#### 🧩 Datasets
+####  Datasets
 
 - The **uniref50 subsample** must be downloaded manually from [this Kaggle link](https://www.kaggle.com/datasets/dannyahn/uniref50-sub)  (due to GitHub file size limitation).
 - Move the downloaded file to:
@@ -93,12 +93,12 @@ Instead, this module implements **segment-based pooling**:
 4. **Normalize** segment embeddings.
 5. Compute sequence similarity as the **mean cosine similarity** of corresponding segments.
 
-#### 🧪 Files
+####  Files
 
 - `test.py` — Checks environment setup and verifies segment pooling functionality.
 - `segment_number_selection.py` — Evaluates distances between conservative and non-conservative mutations for various segment counts.
 
-> 📈 **Tradeoff:**
+>  **Tradeoff:**
 > - Fewer segments → more averaging, less local detail.
 > - More segments → higher resolution, more noise.
 
@@ -115,7 +115,7 @@ The **heart of the project**: a simulation of protein evolution in embedding spa
 - Starts from a random **239–AA sequence**.
 
 
-#### 🔁 Algorithm Details
+####  Algorithm Details
 
 - **Mutations per step:** `K_PROPOSALS = 8`
 - **Insertion/deletion rate:** 1% each
@@ -127,7 +127,7 @@ The **heart of the project**: a simulation of protein evolution in embedding spa
 - If similarity plateaus for **lookback = 80** steps → reduce β to 100 to escape local minima
 
 
-#### 🧭 Simulation Parameters
+####  Simulation Parameters
 
 - Default steps: **7,500**
 - Convergence typically around steps **4,000–5,000**
@@ -139,11 +139,11 @@ Each run generates:
 - A **.txt file** with high-similarity sequences
 - Stored under: `ESM_analyzer/markov/runs/`
 
-> 🧠 If the folder lacks a `.txt` file, the simulation did not reach 0.9 similarity.
+>  If the folder lacks a `.txt` file, the simulation did not reach 0.9 similarity.
 
 ***
 
-### ⚡ Performance Benchmarks
+###  Performance Benchmarks
 
 | Device | GPU RAM | Speed (100 steps, k=8, m=4) |
 | :-- | :-- | :-- |
@@ -154,9 +154,9 @@ Each run generates:
 
 ***
 
-## 🧪 Project Status
+##  Analysis
 
-**Analysis section:** *Under construction... MSA for allignment of the plateau region ......*
+**Under construction...** *MSA for allignment of the plateau region ......*
 
 ***
 
