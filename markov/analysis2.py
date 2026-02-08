@@ -87,12 +87,34 @@ aligned_conservation = np.array(aligned_conservation)
 heatmap_matrix = np.vstack([mismatch, aligned_conservation])
 
 # Plot
-plt.figure(figsize=(15,3))
-plt.imshow(heatmap_matrix, aspect='auto', cmap='coolwarm', interpolation='nearest')
+fig, ax = plt.subplots(2, 1, figsize=(15,3), sharex=True)
 
-plt.yticks([0,1], ['Mismatch', 'Conservation'])
-plt.xlabel("Position in alignment")
-plt.colorbar(label="Mismatch / Conservation")
-plt.title("Consensus vs TONB heatmap")
+im0 = ax[0].imshow(
+    mismatch[np.newaxis, :],
+    aspect='auto',
+    cmap='coolwarm',
+    vmin=0, vmax=1
+)
+
+ax[0].set_yticks([0])
+ax[0].set_yticklabels(['Mismatch'])
+
+fig.colorbar(im0, ax=ax[0])   # <-- colorbar SOLO mismatch
+
+
+im1 = ax[1].imshow(
+    aligned_conservation[np.newaxis, :],
+    aspect='auto',
+    cmap='coolwarm_r',   # meglio invertire la cmap invece dei dati
+    vmin=0, vmax=1
+)
+
+ax[1].set_yticks([0])
+ax[1].set_yticklabels(['Conservation'])
+
+fig.colorbar(im1, ax=ax[1])   # <-- colorbar SOLO conservation
+
+plt.suptitle("Consensus vs TONB heatmap")  # meglio di plt.title con subplots
+plt.tight_layout()
 plt.savefig("tonb_vs_consensus_heatmap.png", dpi=300)
 plt.show()
