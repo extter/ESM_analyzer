@@ -86,7 +86,7 @@ To reduce the anisotropy of the protein embedding space , we implemented a scala
 
 - **Feature Extraction**: Residue-level embeddings are extracted from the 28th layer of ESM-2, yielding a 1280-dimensional latent space for each amino acid
 
-- **Incremental PCA (IPCA)**: Given the massive scale of the dataset (millions of residues), we utilized an incremental approach
+- **Incremental PCA (IPCA)**: Given the massive scale of the dataset (millions of residues), we utilized an incremental approach (batch_size = 64)
 
 - **Projection**: The original 1280-dimensional space is projected onto the top 640 principal components
 
