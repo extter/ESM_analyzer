@@ -1,5 +1,5 @@
 import random
-import math
+import matplotlib.pyplot as plt
 import numpy as np
 from Bio.Align import substitution_matrices
 import pandas as pd
@@ -8,31 +8,125 @@ import torch
 import torch.nn as nn
 from esm import pretrained
 from sklearn.decomposition import IncrementalPCA
-import joblib  # per salvare PCA
+from Bio import SeqIO  # per leggere FASTA UniRef50
+blosum62 = substitution_matrices.load("BLOSUM62")
 
-layer = 28
+# ------------------------
+# CONFIG
+# ------------------------
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model, alphabet = pretrained.esm2_t33_650M_UR50D()
+model = model.to(device)
+model.eval()
+torch.set_grad_enabled(False)
+batch_converter = alphabet.get_batch_converter()
+
 segment_list = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48]  # numeri di segmenti da provare
-n_random_baseline = 100            # ensemble random
-n_conservative = 100               # mutazioni conservative
+layer = 28
+n_random = 200
+n_conservative = 200
+n_random_baseline = 100
+n_uniref = 200  # numero proteine UniRef50 da campionare
+
+# CAMBIA QUESTO PATH con il tuo file FASTA UniRef50
+uniref_fasta_path = "../pca/datasets/uniref50_subsample.fasta"  # <-- ADATTA IL PATH!
+
+aa_list = list("ACDEFGHIKLMNPQRSTVWY")
 
 # ------------------------
-# CARICA UNIREF50 (150–700 aa)
+# SEQUENZE
 # ------------------------
-uniref_fasta_path = "../pca/datasets/uniref50_subsample.fasta"
-n_uniref = 100  # stesso ordine di grandezza degli altri baseline
+tonb_seq = (
+    "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"
+)
+
+seq_hb = (
+    "VLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR"
+)
+
+# ------------------------
+# FUNZIONI ESM
+# ------------------------
+@torch.no_grad()
+def get_residue_embeddings(seq):
+    data = [("seq", seq)]
+    _, _, tokens = batch_converter(data)
+    tokens = tokens.to(device)
+
+    out = model(tokens, repr_layers=[layer], return_contacts=False)
+    reps = out["representations"][layer][0, 1:-1]  # [L, D]
+    return reps.cpu().numpy()
+
+def split_into_segments(residue_embs, n_segments):
+    L, D = residue_embs.shape
+    boundaries = np.linspace(0, L, n_segments + 1).astype(int)
+
+    segments = np.zeros((n_segments, D))
+    for i in range(n_segments):
+        start, end = boundaries[i], boundaries[i + 1]
+        if start < end:
+            seg = residue_embs[start:end].mean(axis=0)
+            seg /= np.linalg.norm(seg) + 1e-8
+            segments[i] = seg
+    return segments
+
+def segmentwise_cosine(seg_a, seg_b):
+    return np.sum(seg_a * seg_b, axis=1)
+
+def global_similarity(seg_a, seg_b):
+    return segmentwise_cosine(seg_a, seg_b).mean()
+
+# ------------------------
+# MUTAZIONI
+# ------------------------
+
+def conservative_mutation_blosum(seq, min_score=2):
+    seq = list(seq)
+    pos = random.randrange(len(seq))
+    aa = seq[pos]
+
+    candidates = []
+    for aa2 in aa_list:
+        if aa2 == aa:
+            continue
+        score = blosum62.get((aa, aa2), blosum62.get((aa2, aa), -10))
+        if score > min_score:
+            candidates.append(aa2)
+
+    if not candidates:
+        return ''.join(seq)
+
+    seq[pos] = random.choice(candidates)
+    return ''.join(seq)
 
 print("Caricamento UniRef50...")
 uniref_sequences = []
 
-with open(uniref_fasta_path, "r") as handle:
-    for record in SeqIO.parse(handle, "fasta"):
-        seq = str(record.seq)
-        if 150 <= len(seq) <= 700:
-            uniref_sequences.append(seq)
-        if len(uniref_sequences) >= n_uniref:
-            break
+try:
+    with open(uniref_fasta_path, "r") as handle:
+        for i, record in enumerate(SeqIO.parse(handle, "fasta"), start=1):
+            seq_str = str(record.seq)
+            L = len(seq_str)
 
-print(f"Caricate {len(uniref_sequences)} sequenze UniRef50")
+            if not (150 <= L <= 700):
+                continue
+
+            if len(uniref_sequences) < n_uniref:
+                uniref_sequences.append(seq_str)
+            else:
+                j = random.randint(1, i)
+                if j <= n_uniref:
+                    uniref_sequences[j - 1] = seq_str
+
+
+
+    print(f"Caricate {len(uniref_sequences)} sequenze UniRef50")
+
+except FileNotFoundError:
+    print(f"❌ File {uniref_fasta_path} non trovato!")
+    n_uniref = 0
+    sims_tonb_uniref = []
+
 
 # ------------------------
 # EMBEDDING UNIREF
@@ -43,6 +137,8 @@ for seq in tqdm(uniref_sequences, desc="UniRef embeddings"):
     emb = get_residue_embeddings(seq)
     uniref_embs.append(emb)
 
+def random_sequence(length):
+    return ''.join(random.choice(aa_list) for _ in range(length))
 
 # ------------------------
 # GENERA ENSEMBLE RANDOM
