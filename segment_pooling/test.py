@@ -18,6 +18,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model, alphabet = pretrained.esm2_t33_650M_UR50D()
 model = model.to(device)
 model.eval()
+torch.set_grad_enabled(False)
 batch_converter = alphabet.get_batch_converter()
 
 layer = 28
@@ -28,7 +29,7 @@ n_random_baseline = 100
 n_uniref = 200  # numero proteine UniRef50 da campionare
 
 # CAMBIA QUESTO PATH con il tuo file FASTA UniRef50
-uniref_fasta_path = "./datasets/uniref50_subsample.fasta"  # <-- ADATTA IL PATH!
+uniref_fasta_path = "../pca/datasets/uniref50_subsample.fasta"  # <-- ADATTA IL PATH!
 
 aa_list = list("ACDEFGHIKLMNPQRSTVWY")
 
@@ -105,17 +106,20 @@ uniref_sequences = []
 
 try:
     with open(uniref_fasta_path, "r") as handle:
-        for record in SeqIO.parse(handle, "fasta"):
+        for i, record in enumerate(SeqIO.parse(handle, "fasta"), start=1):
             seq_str = str(record.seq)
             L = len(seq_str)
 
-            # Filtro unico e chiaro
-            if 150 <= L <= 700:
-                uniref_sequences.append(seq_str)
+            if not (150 <= L <= 700):
+                continue
 
-            # Limite per test / fitting IPCA
-            random.shuffle(uniref_sequences)
-            uniref_sequences = uniref_sequences[:n_uniref]
+            if len(uniref_sequences) < n_uniref:
+                uniref_sequences.append(seq_str)
+            else:
+                j = random.randint(1, i)
+                if j <= n_uniref:
+                    uniref_sequences[j - 1] = seq_str
+
 
 
     print(f"Caricate {len(uniref_sequences)} sequenze UniRef50")
@@ -129,9 +133,13 @@ except FileNotFoundError:
 # EMBEDDING BASE
 # ------------------------
 print("Calcolo embedding base...")
+
+print("Calcolo embedding TonB...")
+print(device)
 tonb_res = get_residue_embeddings(tonb_seq)
 tonb_seg = split_into_segments(tonb_res, n_segments)
 
+print("Calcolo embedding Hb...")
 hb_res = get_residue_embeddings(seq_hb)
 hb_seg = split_into_segments(hb_res, n_segments)
 

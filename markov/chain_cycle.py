@@ -20,11 +20,6 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 K_PROPOSALS = 8     # numero di mutazioni per step 
 TOP_M = 4         # scegli tra le migliori M
-# 8,4 per fisso 3060; 4,2 per laptop 3070; non obbligatorio seguire
-# 3070 laptop: 100 step in circa 15 secondi con k = 4 e m = 2
-# 3060 desktop: 100 step in circa 26 secondi con k = 4 e m = 2
-# 3060 desktop: 100 step in circa 48 secondi con k = 8 e m = 4
-
 
 
 # ------------------------
