@@ -39,7 +39,7 @@ CONFIG = {
     'p_del': 0.1,
     
     # Variabili per la PCA
-    'max_seqs_for_pca': 10,
+    'max_seqs_for_pca': 100000,
     'pca_components': 640,
     'pca_batch_size': 64
 }
