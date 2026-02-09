@@ -8,7 +8,7 @@ from pathlib import Path
 
 CONFIG = { 
     'input_path' : './runs',
-    'threshold' : 0.98,
+    'threshold' : 0.97,
     'output_path' : './bestsimilarity_dataset'
 }
 
@@ -181,6 +181,7 @@ else:
         print("Nessuna sequenza estratta. Abbassa threshold!")
         exit()
 
+'''
 # 2. Allineamento pairwise
 df_dist, top_aligns = pairwise_alignment(best_file)
 
@@ -188,3 +189,4 @@ print("\n🎉 PIPELINE COMPLETA!")
 print("best_sequences.txt     (raw)")
 print("pairwise_identity_matrix.csv  (heatmap)")
 print("top_alignments.txt     (dettagli)")
+'''
