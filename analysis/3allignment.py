@@ -7,7 +7,7 @@ from collections import Counter, defaultdict
 # CONFIG
 # ------------------------
 msa_dir = Path("./extracted/run_msas")  # cartella con i file allineati (_aligned.fasta)
-output_file = Path("./extracted/run_stats.txt")
+output_file = Path("./extracted/run_msas/run_stats.txt")
 
 # ------------------------
 # FUNZIONI
