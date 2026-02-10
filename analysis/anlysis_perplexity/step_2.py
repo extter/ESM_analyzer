@@ -5,7 +5,7 @@
 import pandas as pd
 import numpy as np
 import torch
-import plotly.express as px
+import matplotlib.pyplot as plt
 from esm import pretrained
 import joblib
 from tqdm import tqdm
@@ -13,6 +13,10 @@ from tqdm import tqdm
 # === 1. ADATTA: PATHS ===
 df_path = './dataset_bilanciato_097.csv'  # dal Passo 1
 pca_path = "../../pca/joblibs/Total_ipca_fitted.joblib"  # TUO joblib
+
+# batching per evitare OOM
+BATCH_SIZE = 8  # se crasha ancora -> 4
+
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f'Device: {device}')
@@ -32,44 +36,76 @@ model = model.to(device)
 model.eval()
 batch_converter = alphabet.get_batch_converter()
 
-# === 4. ESM + PCA + MEAN POOLING ===
+# === 4. ESM + PCA + MEAN POOLING (BATCH SAFE) ===
 print('Calcolo embedding...')
-data = [("seq", seq) for seq in tqdm(df['sequence'])]
-_, _, tokens = batch_converter(data)
-tokens = tokens.to(device)
 
-with torch.no_grad():
-    out = model(tokens, repr_layers=[28], return_contacts=False)
-    reps = out["representations"][28][:, 1:-1]  # [N, L, 1280]
+all_mean = []
+sequences = df['sequence'].tolist()
 
-# PCA su GPU (TUO codice)
-reps_pca = (reps - pca_mean) @ pca_components.T  # [N, L, 640]
-reps_pca = reps_pca.cpu().numpy()  # [8734, 207, 640]
-print(f'reps_pca shape: {reps_pca.shape}')
+for i in tqdm(range(0, len(sequences), BATCH_SIZE)):
+    batch_seqs = sequences[i:i+BATCH_SIZE]
+    data = [("seq", seq) for seq in batch_seqs]
 
-# === 5. MEAN POOLING (globale) ===
-mean_pooled = reps_pca.mean(axis=1)  # [8734, 640]
+    _, _, tokens = batch_converter(data)
+    tokens = tokens.to(device)
+
+    with torch.no_grad():
+        out = model(tokens, repr_layers=[28], return_contacts=False)
+        reps = out["representations"][28][:, 1:-1]  # [B, L, 1280]
+
+        # PCA su GPU
+        reps_pca = (reps - pca_mean) @ pca_components.T  # [B, L, 640]
+
+        # MEAN POOLING immediato -> evita tensor enormi
+        mean_pooled_batch = reps_pca.mean(dim=1)  # [B, 640]
+
+    all_mean.append(mean_pooled_batch.cpu())
+
+    # cleanup GPU
+    del tokens, out, reps, reps_pca, mean_pooled_batch
+    if device == "cuda":
+        torch.cuda.empty_cache()
+
+mean_pooled = torch.cat(all_mean).numpy()
 print(f'Mean pooled: {mean_pooled.shape}')
 
 # === 6. PC1 vs PC2 ===
 df['PC1'] = mean_pooled[:, 0]
 df['PC2'] = mean_pooled[:, 1]
 
-# === 7. PLOT ===
-fig1 = px.scatter(df, x='PC1', y='PC2', 
-                 color='cosine', 
-                 color_continuous_scale='RdYlBu_r',
-                 title='Passo 2: MEAN POOLING PCA space (>0.97 seq)',
-                 hover_data=['chain_id'])
-fig1.show()
+# === 7. PLOT con Matplotlib ===
 
-fig2 = px.scatter(df, x='PC1', y='PC2', 
-                 color='chain_id',
-                 title='Passo 2: per CATENA')
-fig2.show()
+# Scatter 1: colore continuo "cosine"
+plt.figure(figsize=(8,6))
+sc = plt.scatter(df['PC1'], df['PC2'], c=df['cosine'], cmap='RdYlBu_r', s=50)
+plt.colorbar(sc, label='cosine')
+plt.xlabel('PC1')
+plt.ylabel('PC2')
+plt.title('Passo 2: MEAN POOLING PCA space (>0.97 seq)')
+plt.tight_layout()
+plt.savefig('plot1_cosine_matplotlib.png', dpi=300)
+plt.close()
 
-# Salva
-fig1.write_html('plot1_cosine.html')
-fig2.write_html('plot2_chains.html')
+# Scatter 2: colore discreto "chain_id"
+plt.figure(figsize=(8,6))
+# assegna un colore diverso a ogni catena
+chain_ids = df['chain_id'].unique()
+colors = plt.cm.tab20(np.linspace(0,1,len(chain_ids)))  # mappa di colori discreti
+color_dict = dict(zip(chain_ids, colors))
+
+plt.scatter(df['PC1'], df['PC2'], c=df['chain_id'].map(color_dict), s=50)
+plt.xlabel('PC1')
+plt.ylabel('PC2')
+plt.title('Passo 2: per CATENA')
+# legenda
+for cid, color in color_dict.items():
+    plt.scatter([], [], c=[color], label=cid)
+plt.legend(title='chain_id', bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.tight_layout()
+plt.savefig('plot2_chains_matplotlib.png', dpi=300)
+plt.close()
+
+# Salva dataframe
 df.to_csv('df_con_pc.csv', index=False)
-print('✅ SALVATO: plot1_cosine.html, plot2_chains.html, df_con_pc.csv')
+print('✅ SALVATO: plot1_cosine_matplotlib.png, plot2_chains_matplotlib.png, df_con_pc.csv')
+
