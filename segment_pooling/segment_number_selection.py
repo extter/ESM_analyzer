@@ -21,12 +21,12 @@ model.eval()
 torch.set_grad_enabled(False)
 batch_converter = alphabet.get_batch_converter()
 
-segment_list = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48]  # numeri di segmenti da provare
+segment_list = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48]  
 layer = 28
 n_random = 200
 n_conservative = 200
 n_random_baseline = 100
-n_uniref = 200  # numero proteine UniRef50 da campionare
+n_uniref = 200  
 
 # CAMBIA QUESTO PATH con il tuo file FASTA UniRef50
 uniref_fasta_path = "../pca/datasets/uniref50_subsample.fasta"  # <-- ADATTA IL PATH!
@@ -123,7 +123,7 @@ try:
     print(f"Caricate {len(uniref_sequences)} sequenze UniRef50")
 
 except FileNotFoundError:
-    print(f"❌ File {uniref_fasta_path} non trovato!")
+    print(f"File {uniref_fasta_path} non trovato!")
     n_uniref = 0
     sims_tonb_uniref = []
 
@@ -183,7 +183,7 @@ for n_seg in segment_list:
     std_cons = np.std(sims_cons)
 
     # ------------------------
-    # TonB vs UniRef50 random  (NUOVO)
+    # TonB vs UniRef50 random  
     # ------------------------
     sims_uniref = []
     for emb in uniref_embs:
