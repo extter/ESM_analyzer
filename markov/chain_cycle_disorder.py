@@ -196,11 +196,11 @@ while True:
     # --- Genera timestamp per file ---
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    run_dir = f"./runs/{timestamp}"
+    run_dir = f"./runs/{timestamp}_disorder"
     os.makedirs(run_dir, exist_ok=True)
 
-    output_file = f"./runs/{timestamp}/sequences_over_0.9_{timestamp}.txt"
-    plot_file = f"./runs/{timestamp}/similarity_plot_{timestamp}.png"
+    output_file = f"./runs/{timestamp}_disorder/sequences_over_0.9_{timestamp}.txt"
+    plot_file = f"./runs/{timestamp}_disorder/similarity_plot_{timestamp}.png"
 
     # --- Sequenza target ---
     seq_target = "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"
