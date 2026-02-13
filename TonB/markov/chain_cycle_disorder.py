@@ -187,7 +187,7 @@ def cosine_similarity(vec1, vec2):
 beta_orig = 800
 beta = beta_orig
 n_steps = 3000
-threshold = 0.95
+threshold = 0.99
 lookback = 80 
 stuck_threshold = 0  
 
