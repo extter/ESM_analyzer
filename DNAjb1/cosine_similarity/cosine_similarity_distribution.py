@@ -1,6 +1,5 @@
-tonb_sequence = (
-    "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"
-)
+tonb_sequence = "MGKDYYQTLGLARGASDDEIKRAYRRQALRYPDKNKEPGAEEKFKEIAEAYDVLSDPRKREIFDRYGEEGLKGGGPSGGSSGGANGTSFSYTFGDPAMFAEFFGGRNP"
+
 import torch
 import time
 import random
@@ -11,12 +10,11 @@ from esm import pretrained
 from tqdm import tqdm
 from scipy.spatial.distance import cosine
 
-# =====================
+# ---------------------
 # CONFIG
-# =====================
+# ---------------------
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-print("\n==============================")
 print("MODEL LOADED")
 print("Device:", DEVICE)
 
