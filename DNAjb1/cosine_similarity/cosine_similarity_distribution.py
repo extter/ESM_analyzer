@@ -23,7 +23,6 @@ if DEVICE == "cuda":
     print("VRAM allocated:",
           round(torch.cuda.memory_allocated()/1e9, 2), "GB")
 
-print("==============================\n")
 
 LAYER = 28
 N_SAMPLES = 200

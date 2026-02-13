@@ -1,5 +1,5 @@
 import os
-# Ottimizzazione memoria CUDA
+
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 import random
