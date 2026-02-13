@@ -9,12 +9,9 @@ Before running any scripts, set up your environment with the following commands:
 
 ```bash
 conda create -n bio python=3.11.13
+conda activate bio
 pip install torch fair-esm biopython numpy scipy tqdm pandas joblib seaborn "fastcore<1.9,>=1.8.0" fastai==2.8.4
 pip install -U scikit-learn==1.7.2
-```
-Then do :
-```bash
-conda activate bio
 ```
 
 > ⚠️ **Note:**
