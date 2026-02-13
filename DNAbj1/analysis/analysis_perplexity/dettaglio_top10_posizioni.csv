@@ -1,0 +1,11 @@
+position,mutants
+1,"{'M': np.int64(1150), 'V': np.int64(753), 'Q': np.int64(681), 'D': np.int64(612), 'T': np.int64(548)}"
+2,"{'A': np.int64(1439), 'S': np.int64(1415), 'L': np.int64(1074), 'T': np.int64(988), 'P': np.int64(805)}"
+3,"{'L': np.int64(1467), 'A': np.int64(885), 'V': np.int64(758), 'S': np.int64(731), 'T': np.int64(686)}"
+4,"{'T': np.int64(1279), 'L': np.int64(861), 'S': np.int64(819), 'F': np.int64(648), 'R': np.int64(645)}"
+5,"{'P': np.int64(1372), 'R': np.int64(914), 'A': np.int64(629), 'F': np.int64(624), 'N': np.int64(623)}"
+6,"{'R': np.int64(1100), 'L': np.int64(945), 'P': np.int64(802), 'S': np.int64(592), 'V': np.int64(589)}"
+7,"{'R': np.int64(1796), 'N': np.int64(1007), 'P': np.int64(848), 'S': np.int64(792), 'F': np.int64(694)}"
+8,"{'R': np.int64(2271), 'P': np.int64(931), 'S': np.int64(749), 'H': np.int64(733), 'N': np.int64(619)}"
+9,"{'P': np.int64(1427), 'S': np.int64(1393), 'R': np.int64(1206), 'K': np.int64(778), 'W': np.int64(666)}"
+10,"{'P': np.int64(1973), 'R': np.int64(1326), 'S': np.int64(838), 'W': np.int64(633), 'A': np.int64(507)}"
