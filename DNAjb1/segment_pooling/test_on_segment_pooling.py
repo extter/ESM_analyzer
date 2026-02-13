@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from esm import pretrained
 from tqdm import tqdm
 from Bio.Align import substitution_matrices
-from Bio import SeqIO  # per leggere FASTA UniRef50
+from Bio import SeqIO  
 from scipy.spatial.distance import euclidean
 from collections import defaultdict
 
@@ -26,19 +26,17 @@ n_segments = 12
 n_random = 200
 n_conservative = 200
 n_random_baseline = 100
-n_uniref = 200  # numero proteine UniRef50 da campionare
+n_uniref = 200  
 
-# CAMBIA QUESTO PATH con il tuo file FASTA UniRef50
-uniref_fasta_path = "../pca/datasets/uniref50_subsample.fasta"  # <-- ADATTA IL PATH!
+
+uniref_fasta_path = "../pca/datasets/uniref50_subsample.fasta"  
 
 aa_list = list("ACDEFGHIKLMNPQRSTVWY")
 
 # ------------------------
 # SEQUENZE
 # ------------------------
-tonb_seq = (
-    "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"
-)
+DNAbj1_seq ="MGKDYYQTLGLARGASDDEIKRAYRRQALRYPDKNKEPGAEEKFKEIAEAYDVLSDPRKREIFDRYGEEGLKGGGPSGGSSGGANGTSFSYTFGDPAMFAEFFGGRNP"
 
 seq_hb = (
     "VLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR"
@@ -127,17 +125,17 @@ try:
 except FileNotFoundError:
     print(f"❌ File {uniref_fasta_path} non trovato!")
     n_uniref = 0
-    sims_tonb_uniref = []
+    sims_DNAbj1_uniref = []
 
 # ------------------------
 # EMBEDDING BASE
 # ------------------------
 print("Calcolo embedding base...")
 
-print("Calcolo embedding TonB...")
+print("Calcolo embedding DNAbj1...")
 print(device)
-tonb_res = get_residue_embeddings(tonb_seq)
-tonb_seg = split_into_segments(tonb_res, n_segments)
+DNAbj1_res = get_residue_embeddings(DNAbj1_seq)
+DNAbj1_seg = split_into_segments(DNAbj1_res, n_segments)
 
 print("Calcolo embedding Hb...")
 hb_res = get_residue_embeddings(seq_hb)
@@ -146,46 +144,46 @@ hb_seg = split_into_segments(hb_res, n_segments)
 # ------------------------
 # STATISTICHE
 # ------------------------
-sims_tonb_tonb = []
-sims_tonb_random = []
-sims_tonb_cons = []
-sims_tonb_uniref = []
+sims_DNAbj1_DNAbj1 = []
+sims_DNAbj1_random = []
+sims_DNAbj1_cons = []
+sims_DNAbj1_uniref = []
 sims_random_random = []
 
-# TonB vs TonB (identico, per controllo numerico)
-sims_tonb_tonb.append(global_similarity(tonb_seg, tonb_seg))
+# DNAbj1 vs DNAbj1 (identico, per controllo numerico)
+sims_DNAbj1_DNAbj1.append(global_similarity(DNAbj1_seg, DNAbj1_seg))
 
-# TonB vs Hb
-sim_tonb_hb = global_similarity(tonb_seg, hb_seg)
+# DNAbj1 vs Hb
+sim_DNAbj1_hb = global_similarity(DNAbj1_seg, hb_seg)
 
-# TonB vs random
-print("TonB vs random...")
-for _ in tqdm(range(n_random), desc="TonB vs random"):
-    rseq = random_sequence(len(tonb_seq))
+# DNAbj1 vs random
+print("DNAbj1 vs random...")
+for _ in tqdm(range(n_random), desc="DNAbj1 vs random"):
+    rseq = random_sequence(len(DNAbj1_seq))
     rseg = split_into_segments(get_residue_embeddings(rseq), n_segments)
-    sims_tonb_random.append(global_similarity(tonb_seg, rseg))
+    sims_DNAbj1_random.append(global_similarity(DNAbj1_seg, rseg))
 
-# TonB vs mutazioni conservative
-print("TonB vs conservative...")
-for _ in tqdm(range(n_conservative), desc="TonB vs conservative"):
-    mut = conservative_mutation_blosum(tonb_seq, min_score=2)
+# DNAbj1 vs mutazioni conservative
+print("DNAbj1 vs conservative...")
+for _ in tqdm(range(n_conservative), desc="DNAbj1 vs conservative"):
+    mut = conservative_mutation_blosum(DNAbj1_seq, min_score=2)
     mut_seg = split_into_segments(get_residue_embeddings(mut), n_segments)
-    sims_tonb_cons.append(global_similarity(tonb_seg, mut_seg))
+    sims_DNAbj1_cons.append(global_similarity(DNAbj1_seg, mut_seg))
 
-# TonB vs UniRef50
+# DNAbj1 vs UniRef50
 if n_uniref > 0:
-    print("TonB vs UniRef50...")
-    for seq_str in tqdm(uniref_sequences[:n_uniref], desc="TonB vs UniRef50"):
+    print("DNAbj1 vs UniRef50...")
+    for seq_str in tqdm(uniref_sequences[:n_uniref], desc="DNAbj1 vs UniRef50"):
         uref_seg = split_into_segments(get_residue_embeddings(seq_str), n_segments)
-        sims_tonb_uniref.append(global_similarity(tonb_seg, uref_seg))
+        sims_DNAbj1_uniref.append(global_similarity(DNAbj1_seg, uref_seg))
 else:
-    sims_tonb_uniref = []
+    sims_DNAbj1_uniref = []
 
 # Random vs random (baseline) - sequenze casuali
 print("Random vs random baseline (sequenze casuali)...")
 random_seqs = []
 for i in tqdm(range(n_random_baseline), desc="Generate random seqs"):
-    rseq = random_sequence(len(tonb_seq) + random.randint(-50, 50))
+    rseq = random_sequence(len(DNAbj1_seq) + random.randint(-50, 50))
     random_seqs.append(rseq)
 
 print("Calcolo embedding random batch...")
@@ -239,22 +237,22 @@ else:
 # RISULTATI NUMERICI (MODIFICATO)
 # ------------------------
 print("\n=== RISULTATI ===")
-print("TonB vs TonB:                           %.4f" % sims_tonb_tonb[0])
-print("TonB vs Hb:                             %.4f" % sim_tonb_hb)
-print("TonB vs Random: mean = %.4f ± %.4f" % (np.mean(sims_tonb_random), np.std(sims_tonb_random)))
-print("TonB vs Conservative: mean = %.4f ± %.4f" % (np.mean(sims_tonb_cons), np.std(sims_tonb_cons)))
-if len(sims_tonb_uniref) > 0:
-    print("TonB vs UniRef50 (n=%d): mean = %.4f ± %.4f" % (len(sims_tonb_uniref), np.mean(sims_tonb_uniref), np.std(sims_tonb_uniref)))
+print("DNAbj1 vs DNAbj1:                           %.4f" % sims_DNAbj1_DNAbj1[0])
+print("DNAbj1 vs Hb:                             %.4f" % sim_DNAbj1_hb)
+print("DNAbj1 vs Random: mean = %.4f ± %.4f" % (np.mean(sims_DNAbj1_random), np.std(sims_DNAbj1_random)))
+print("DNAbj1 vs Conservative: mean = %.4f ± %.4f" % (np.mean(sims_DNAbj1_cons), np.std(sims_DNAbj1_cons)))
+if len(sims_DNAbj1_uniref) > 0:
+    print("DNAbj1 vs UniRef50 (n=%d): mean = %.4f ± %.4f" % (len(sims_DNAbj1_uniref), np.mean(sims_DNAbj1_uniref), np.std(sims_DNAbj1_uniref)))
 print("Random vs Random (casuali): mean = %.4f ± %.4f" % (np.mean(sims_random_random), np.std(sims_random_random)))
 if len(sims_uniref_uniref) > 0:
     print("UniRef50 vs UniRef50 (n=%d): mean = %.4f ± %.4f" % (len(sims_uniref_uniref), np.mean(sims_uniref_uniref), np.std(sims_uniref_uniref)))
 
 print("\n=== DELTE vs BASELINE RandomRandom ===")
-print("TonB(Cons) - RandomRandom mean: %.4f" % (np.mean(sims_tonb_cons) - np.mean(sims_random_random)))
-print("TonB(Hb)   - RandomRandom mean: %.4f" % (sim_tonb_hb - np.mean(sims_random_random)))
-print("TonB(Rand) - RandomRandom mean: %.4f" % (np.mean(sims_tonb_random) - np.mean(sims_random_random)))
-if len(sims_tonb_uniref) > 0:
-    print("TonB(UniRef) - RandomRandom mean: %.4f" % (np.mean(sims_tonb_uniref) - np.mean(sims_random_random)))
+print("DNAbj1(Cons) - RandomRandom mean: %.4f" % (np.mean(sims_DNAbj1_cons) - np.mean(sims_random_random)))
+print("DNAbj1(Hb)   - RandomRandom mean: %.4f" % (sim_DNAbj1_hb - np.mean(sims_random_random)))
+print("DNAbj1(Rand) - RandomRandom mean: %.4f" % (np.mean(sims_DNAbj1_random) - np.mean(sims_random_random)))
+if len(sims_DNAbj1_uniref) > 0:
+    print("DNAbj1(UniRef) - RandomRandom mean: %.4f" % (np.mean(sims_DNAbj1_uniref) - np.mean(sims_random_random)))
 if len(sims_uniref_uniref) > 0:
     print("UniRef vs UniRef - RandomRandom mean: %.4f" % (np.mean(sims_uniref_uniref) - np.mean(sims_random_random)))
 
@@ -263,12 +261,12 @@ if len(sims_uniref_uniref) > 0:
 # ------------------------
 plt.figure(figsize=(16, 6))
 
-data = [sims_tonb_tonb, sims_tonb_cons, sims_tonb_random, sims_random_random, [sim_tonb_hb]]
-labels = ["TonB vs TonB", "TonB vs Conservative", "TonB vs Random", "Random vs Random", "TonB vs Hb"]
+data = [sims_DNAbj1_DNAbj1, sims_DNAbj1_cons, sims_DNAbj1_random, sims_random_random, [sim_DNAbj1_hb]]
+labels = ["DNAbj1 vs DNAbj1", "DNAbj1 vs Conservative", "DNAbj1 vs Random", "Random vs Random", "DNAbj1 vs Hb"]
 
-if len(sims_tonb_uniref) > 0:
-    data.append(sims_tonb_uniref)
-    labels.append("TonB vs UniRef50")
+if len(sims_DNAbj1_uniref) > 0:
+    data.append(sims_DNAbj1_uniref)
+    labels.append("DNAbj1 vs UniRef50")
 
 if len(sims_uniref_uniref) > 0:
     data.append(sims_uniref_uniref)
@@ -276,7 +274,7 @@ if len(sims_uniref_uniref) > 0:
 
 box_plot = plt.boxplot(data, labels=labels, showfliers=False)
 plt.ylabel("Segment-wise cosine similarity (mean)")
-plt.title("TonB similarity baselines (segment-based pooling, layer 28)")
+plt.title("DNAbj1 similarity baselines (segment-based pooling, layer 28)")
 plt.grid(alpha=0.3)
 plt.xticks(rotation=45)
 plt.tight_layout()
@@ -289,12 +287,12 @@ plt.show()
 plt.figure(figsize=(18, 5))
 
 plt.subplot(1, 4, 1)
-plt.hist(sims_tonb_cons, bins=30, alpha=0.7, label="TonB vs Cons", color='green', density=True)
-plt.hist(sims_tonb_random, bins=30, alpha=0.7, label="TonB vs Random", color='orange', density=True)
+plt.hist(sims_DNAbj1_cons, bins=30, alpha=0.7, label="DNAbj1 vs Cons", color='green', density=True)
+plt.hist(sims_DNAbj1_random, bins=30, alpha=0.7, label="DNAbj1 vs Random", color='orange', density=True)
 plt.hist(sims_random_random, bins=30, alpha=0.7, label="Random vs Random", color='blue', density=True)
-if len(sims_tonb_uniref) > 0:
-    plt.hist(sims_tonb_uniref, bins=30, alpha=0.7, label="TonB vs UniRef50", color='purple', density=True)
-plt.axvline(sim_tonb_hb, color='red', linestyle='--', label=f"TonB vs Hb: {sim_tonb_hb:.3f}")
+if len(sims_DNAbj1_uniref) > 0:
+    plt.hist(sims_DNAbj1_uniref, bins=30, alpha=0.7, label="DNAbj1 vs UniRef50", color='purple', density=True)
+plt.axvline(sim_DNAbj1_hb, color='red', linestyle='--', label=f"DNAbj1 vs Hb: {sim_DNAbj1_hb:.3f}")
 plt.xlabel("Cosine similarity")
 plt.ylabel("Density")
 plt.legend()
@@ -312,14 +310,14 @@ plt.legend()
 plt.title("Random vs Random")
 
 plt.subplot(1, 4, 3)
-if len(sims_tonb_uniref) > 0:
-    plt.hist(sims_tonb_uniref, bins=50, alpha=0.7, color='purple', edgecolor='black')
-    plt.axvline(np.mean(sims_tonb_uniref), color='red', linestyle='--', 
-               label=f'Mean: {np.mean(sims_tonb_uniref):.3f}')
+if len(sims_DNAbj1_uniref) > 0:
+    plt.hist(sims_DNAbj1_uniref, bins=50, alpha=0.7, color='purple', edgecolor='black')
+    plt.axvline(np.mean(sims_DNAbj1_uniref), color='red', linestyle='--', 
+               label=f'Mean: {np.mean(sims_DNAbj1_uniref):.3f}')
     plt.xlabel("Cosine similarity")
     plt.ylabel("Count")
     plt.legend()
-    plt.title("TonB vs UniRef50")
+    plt.title("DNAbj1 vs UniRef50")
 
 plt.subplot(1, 4, 4)
 if len(sims_uniref_uniref) > 0:

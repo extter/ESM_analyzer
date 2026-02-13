@@ -28,27 +28,27 @@ PCA_CONFIGS = [
         "esm_layer": 28,
     },
     {
-        "name": "PCA_TonB_mutations",
-        "pca_path": "./joblibs/TonB_ipca_fitted_final.joblib",
+        "name": "PCA_DNAbj1_mutations",
+        "pca_path": "./joblibs/DNAbj1_ipca_fitted_final.joblib",
         "esm_layer": 28,
     },
     {
         "name": "PCA_Total",
-        "pca_path": "./joblibs/Total_ipca_fitted.joblib",
+        "pca_path": "./joblibs/Total_DNAbj1_ipca_fitted.joblib",
         "esm_layer": 28,
     },
 ]
 
 
 N_CONS = 500
-N_RANDOM_TONB = 500
+N_RANDOM_DNAbj1 = 500
 N_RANDOM_BASE = 500
 N_UNIREF_TEST = 500
 BATCH_SIZE = 8
 
 uniref_fasta_path = "./datasets/uniref50_subsample.fasta"
 
-seq_tonb = "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"
+seq_DNAbj1 = "MGKDYYQTLGLARGASDDEIKRAYRRQALRYPDKNKEPGAEEKFKEIAEAYDVLSDPRKREIFDRYGEEGLKGGGPSGGSSGGANGTSFSYTFGDPAMFAEFFGGRNP"
 
 seq_hb = "VLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR"
 
@@ -247,14 +247,14 @@ for cfg in PCA_CONFIGS:
     # ------------------------
     # EMBEDDING
     # ------------------------
-    Z_tonb = get_global_embeddings_after_ipca([seq_tonb], ipca, esm_layer)[0]
+    Z_DNAbj1 = get_global_embeddings_after_ipca([seq_DNAbj1], ipca, esm_layer)[0]
 
     # Conservative
-    cons_seqs = generate_conservative_mutants(seq_tonb)
+    cons_seqs = generate_conservative_mutants(seq_DNAbj1)
     Z_cons = get_global_embeddings_after_ipca(cons_seqs, ipca, esm_layer)
 
-    # Random (lunghezza simile a TonB)
-    rand_seqs = generate_random_proteins(N_RANDOM_TONB, (len(seq_tonb)-50, len(seq_tonb)+50))
+    # Random (lunghezza simile a DNAbj1)
+    rand_seqs = generate_random_proteins(N_RANDOM_DNAbj1, (len(seq_DNAbj1)-50, len(seq_DNAbj1)+50))
     Z_rand = get_global_embeddings_after_ipca(rand_seqs, ipca, esm_layer)
 
     # UniRef
@@ -273,10 +273,10 @@ for cfg in PCA_CONFIGS:
     # ------------------------
     cos = cosine_similarity
 
-    cos_tonb_cons = cos(Z_tonb[None], Z_cons)[0]
-    cos_tonb_rand = cos(Z_tonb[None], Z_rand)[0]
-    cos_tonb_uniref = cos(Z_tonb[None], Z_uniref)[0]
-    cos_tonb_hb = cos(Z_tonb[None], Z_hb[None])[0,0]
+    cos_DNAbj1_cons = cos(Z_DNAbj1[None], Z_cons)[0]
+    cos_DNAbj1_rand = cos(Z_DNAbj1[None], Z_rand)[0]
+    cos_DNAbj1_uniref = cos(Z_DNAbj1[None], Z_uniref)[0]
+    cos_DNAbj1_hb = cos(Z_DNAbj1[None], Z_hb[None])[0,0]
 
     cos_rand_rand = cos(Z_rand_base, Z_rand_base)[np.triu_indices(len(Z_rand_base),1)]
     cos_uniref_uniref = cos(Z_uniref, Z_uniref)[np.triu_indices(len(Z_uniref),1)]
@@ -284,11 +284,11 @@ for cfg in PCA_CONFIGS:
     # ------------------------
     # STAMPA RISULTATI
     # ------------------------
-    print("\n📊 RISULTATI COSINE SIMILARITY:")
-    print(f"TonB vs Conservative: {cos_tonb_cons.mean():.4f} ± {cos_tonb_cons.std():.4f}")
-    print(f"TonB vs Random:       {cos_tonb_rand.mean():.4f} ± {cos_tonb_rand.std():.4f}")
-    print(f"TonB vs UniRef:       {cos_tonb_uniref.mean():.4f} ± {cos_tonb_uniref.std():.4f}")
-    print(f"TonB vs Emoglobina:   {cos_tonb_hb:.4f}")
+    print("RISULTATI COSINE SIMILARITY:")
+    print(f"DNAbj1 vs Conservative: {cos_DNAbj1_cons.mean():.4f} ± {cos_DNAbj1_cons.std():.4f}")
+    print(f"DNAbj1 vs Random:       {cos_DNAbj1_rand.mean():.4f} ± {cos_DNAbj1_rand.std():.4f}")
+    print(f"DNAbj1 vs UniRef:       {cos_DNAbj1_uniref.mean():.4f} ± {cos_DNAbj1_uniref.std():.4f}")
+    print(f"DNAbj1 vs Emoglobina:   {cos_DNAbj1_hb:.4f}")
     print(f"Random vs Random:     {cos_rand_rand.mean():.4f} ± {cos_rand_rand.std():.4f}")
     print(f"UniRef vs UniRef:     {cos_uniref_uniref.mean():.4f} ± {cos_uniref_uniref.std():.4f}")
 
@@ -296,17 +296,17 @@ for cfg in PCA_CONFIGS:
     # BOX PLOT
     # ------------------------
     data = [
-        cos_tonb_cons,
-        cos_tonb_rand,
-        cos_tonb_uniref,
+        cos_DNAbj1_cons,
+        cos_DNAbj1_rand,
+        cos_DNAbj1_uniref,
         cos_rand_rand,
         cos_uniref_uniref
     ]
     
     labels = [
-        "TonB vs Conservative",
-        "TonB vs Random",
-        "TonB vs UniRef",
+        "DNAbj1 vs Conservative",
+        "DNAbj1 vs Random",
+        "DNAbj1 vs UniRef",
         "Random vs Random",
         "UniRef vs UniRef"
     ]
@@ -350,10 +350,10 @@ for cfg in PCA_CONFIGS:
     # ------------------------
     # EMBEDDING (segment pooling 24)
     # ------------------------
-    Z_tonb = get_global_embeddings_batch_segment_pooling([seq_tonb], ipca, esm_layer, n_segments=24)[0]
+    Z_DNAbj1 = get_global_embeddings_batch_segment_pooling([seq_DNAbj1], ipca, esm_layer, n_segments=24)[0]
     
-    cons_seqs = generate_conservative_mutants(seq_tonb)
-    rand_seqs = generate_random_proteins(N_RANDOM_TONB, (len(seq_tonb)-50, len(seq_tonb)+50))
+    cons_seqs = generate_conservative_mutants(seq_DNAbj1)
+    rand_seqs = generate_random_proteins(N_RANDOM_DNAbj1, (len(seq_DNAbj1)-50, len(seq_DNAbj1)+50))
     
     Z_cons = get_global_embeddings_batch_segment_pooling(cons_seqs, ipca, esm_layer, 24)
     Z_rand = get_global_embeddings_batch_segment_pooling(rand_seqs, ipca, esm_layer, 24)
@@ -369,10 +369,10 @@ for cfg in PCA_CONFIGS:
     # ------------------------
     cos = cosine_similarity
 
-    cos_tonb_cons = cos(Z_tonb[None], Z_cons)[0]
-    cos_tonb_rand = cos(Z_tonb[None], Z_rand)[0]
-    cos_tonb_uniref = cos(Z_tonb[None], Z_uniref)[0]
-    cos_tonb_hb = cos(Z_tonb[None], Z_hb[None])[0,0]
+    cos_DNAbj1_cons = cos(Z_DNAbj1[None], Z_cons)[0]
+    cos_DNAbj1_rand = cos(Z_DNAbj1[None], Z_rand)[0]
+    cos_DNAbj1_uniref = cos(Z_DNAbj1[None], Z_uniref)[0]
+    cos_DNAbj1_hb = cos(Z_DNAbj1[None], Z_hb[None])[0,0]
 
     cos_rand_rand = cos(Z_rand_base, Z_rand_base)[np.triu_indices(len(Z_rand_base),1)]
     cos_uniref_uniref = cos(Z_uniref, Z_uniref)[np.triu_indices(len(Z_uniref),1)]
@@ -381,10 +381,10 @@ for cfg in PCA_CONFIGS:
     # STAMPA RISULTATI
     # ------------------------
     print("\n📊 RISULTATI COSINE SIMILARITY (Segment Pooling):")
-    print(f"TonB vs Conservative: {cos_tonb_cons.mean():.4f} ± {cos_tonb_cons.std():.4f}")
-    print(f"TonB vs Random:       {cos_tonb_rand.mean():.4f} ± {cos_tonb_rand.std():.4f}")
-    print(f"TonB vs UniRef:       {cos_tonb_uniref.mean():.4f} ± {cos_tonb_uniref.std():.4f}")
-    print(f"TonB vs Emoglobina:   {cos_tonb_hb:.4f}")
+    print(f"DNAbj1 vs Conservative: {cos_DNAbj1_cons.mean():.4f} ± {cos_DNAbj1_cons.std():.4f}")
+    print(f"DNAbj1 vs Random:       {cos_DNAbj1_rand.mean():.4f} ± {cos_DNAbj1_rand.std():.4f}")
+    print(f"DNAbj1 vs UniRef:       {cos_DNAbj1_uniref.mean():.4f} ± {cos_DNAbj1_uniref.std():.4f}")
+    print(f"DNAbj1 vs Emoglobina:   {cos_DNAbj1_hb:.4f}")
     print(f"Random vs Random:     {cos_rand_rand.mean():.4f} ± {cos_rand_rand.std():.4f}")
     print(f"UniRef vs UniRef:     {cos_uniref_uniref.mean():.4f} ± {cos_uniref_uniref.std():.4f}")
 
@@ -392,17 +392,17 @@ for cfg in PCA_CONFIGS:
     # BOX PLOT
     # ------------------------
     data = [
-        cos_tonb_cons,
-        cos_tonb_rand,
-        cos_tonb_uniref,
+        cos_DNAbj1_cons,
+        cos_DNAbj1_rand,
+        cos_DNAbj1_uniref,
         cos_rand_rand,
         cos_uniref_uniref
     ]
     
     labels = [
-        "TonB vs Conservative",
-        "TonB vs Random",
-        "TonB vs UniRef",
+        "DNAbj1 vs Conservative",
+        "DNAbj1 vs Random",
+        "DNAbj1 vs UniRef",
         "Random vs Random",
         "UniRef vs UniRef"
     ]

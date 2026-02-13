@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 from esm import pretrained
 from sklearn.decomposition import IncrementalPCA
-from Bio import SeqIO  # per leggere FASTA UniRef50
+from Bio import SeqIO 
 blosum62 = substitution_matrices.load("BLOSUM62")
 
 # ------------------------
@@ -29,16 +29,14 @@ n_random_baseline = 100
 n_uniref = 200  
 
 # CAMBIA QUESTO PATH con il tuo file FASTA UniRef50
-uniref_fasta_path = "../pca/datasets/uniref50_subsample.fasta"  # <-- ADATTA IL PATH!
+uniref_fasta_path = "../pca/datasets/uniref50_subsample.fasta" 
 
 aa_list = list("ACDEFGHIKLMNPQRSTVWY")
 
 # ------------------------
 # SEQUENZE
 # ------------------------
-tonb_seq = (
-    "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"
-)
+DNAbj1_seq ="MGKDYYQTLGLARGASDDEIKRAYRRQALRYPDKNKEPGAEEKFKEIAEAYDVLSDPRKREIFDRYGEEGLKGGGPSGGSSGGANGTSFSYTFGDPAMFAEFFGGRNP"
 
 seq_hb = (
     "VLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR"
@@ -125,7 +123,7 @@ try:
 except FileNotFoundError:
     print(f"File {uniref_fasta_path} non trovato!")
     n_uniref = 0
-    sims_tonb_uniref = []
+    sims_DNAbj1_uniref = []
 
 
 # ------------------------
@@ -144,7 +142,7 @@ def random_sequence(length):
 # GENERA ENSEMBLE RANDOM
 # ------------------------
 print("Generazione ensemble random...")
-random_seqs = [random_sequence(len(tonb_seq) + random.randint(-50, 50)) for _ in range(n_random_baseline)]
+random_seqs = [random_sequence(len(DNAbj1_seq) + random.randint(-50, 50)) for _ in range(n_random_baseline)]
 all_random_segs_dict = {}  # cache embeddings per numero segmenti
 print("Calcolo embedding random batch...")
 for rseq in tqdm(random_seqs, desc="Random embeddings"):
@@ -155,40 +153,40 @@ for rseq in tqdm(random_seqs, desc="Random embeddings"):
 # LOOP SUI NUMERI DI SEGMENTI
 # ------------------------
 results = {}
-tonb_emb_full = get_residue_embeddings(tonb_seq)  # embedding TonB intero
+DNAbj1_emb_full = get_residue_embeddings(DNAbj1_seq)  # embedding DNAbj1 intero
 
 for n_seg in segment_list:
     print(f"\n=== Segmenti: {n_seg} ===")
-    tonb_seg = split_into_segments(tonb_emb_full, n_seg)
+    DNAbj1_seg = split_into_segments(DNAbj1_emb_full, n_seg)
     
     # ------------------------
-    # TonB vs ensemble random
+    # DNAbj1 vs ensemble random
     # ------------------------
     ensemble_sims = []
     for rseq in random_seqs:
         rseg = split_into_segments(all_random_segs_dict[rseq], n_seg)
-        ensemble_sims.append(global_similarity(tonb_seg, rseg))
+        ensemble_sims.append(global_similarity(DNAbj1_seg, rseg))
     mean_ensemble = np.mean(ensemble_sims)
     std_ensemble = np.std(ensemble_sims)
     
     # ------------------------
-    # TonB vs conservative
+    # DNAbj1 vs conservative
     # ------------------------
     sims_cons = []
     for _ in range(n_conservative):
-        mut_seq = conservative_mutation_blosum(tonb_seq)
+        mut_seq = conservative_mutation_blosum(DNAbj1_seq)
         mut_seg = split_into_segments(get_residue_embeddings(mut_seq), n_seg)
-        sims_cons.append(global_similarity(tonb_seg, mut_seg))
+        sims_cons.append(global_similarity(DNAbj1_seg, mut_seg))
     mean_cons = np.mean(sims_cons)
     std_cons = np.std(sims_cons)
 
     # ------------------------
-    # TonB vs UniRef50 random  
+    # DNAbj1 vs UniRef50 random  
     # ------------------------
     sims_uniref = []
     for emb in uniref_embs:
         useg = split_into_segments(emb, n_seg)
-        sims_uniref.append(global_similarity(tonb_seg, useg))
+        sims_uniref.append(global_similarity(DNAbj1_seg, useg))
     mean_uniref = np.mean(sims_uniref)
     std_uniref = np.std(sims_uniref)
     
@@ -198,9 +196,9 @@ for n_seg in segment_list:
     delta_rand = mean_cons - mean_ensemble
     delta_uniref = mean_cons - mean_uniref
     
-    print(f"TonB vs Random:   {mean_ensemble:.4f} ± {std_ensemble:.4f}")
-    print(f"TonB vs UniRef:   {mean_uniref:.4f} ± {std_uniref:.4f}")
-    print(f"TonB vs Cons:     {mean_cons:.4f} ± {std_cons:.4f}")
+    print(f"DNAbj1 vs Random:   {mean_ensemble:.4f} ± {std_ensemble:.4f}")
+    print(f"DNAbj1 vs UniRef:   {mean_uniref:.4f} ± {std_uniref:.4f}")
+    print(f"DNAbj1 vs Cons:     {mean_cons:.4f} ± {std_cons:.4f}")
     print(f"Δ Cons–Random:   {delta_rand:.4f}")
     print(f"Δ Cons–UniRef:   {delta_uniref:.4f}")
     
@@ -231,7 +229,7 @@ for n_seg in segment_list:
 plt.boxplot(data_to_plot, labels=labels, showfliers=False)
 plt.xticks(rotation=60)
 plt.ylabel("Segment-wise cosine similarity")
-plt.title("TonB: Conservative vs Random vs UniRef50")
+plt.title("DNAbj1: Conservative vs Random vs UniRef50")
 plt.grid(alpha=0.3)
 plt.tight_layout()
 plt.savefig("./result.png", dpi = 300)

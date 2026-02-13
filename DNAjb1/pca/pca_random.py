@@ -24,8 +24,8 @@ print(f"Device in uso: {device}")
 
 CONFIG = {
     'n_samples': 100000,  
-    'tonb_length': 239,
-    'tonb_length_range': (200, 300),
+    'arbitrary_length': 239,
+    'arbitrary_length_range': (200, 300),
     'output_dir': './datasets', 
     'joblib_dir': './joblibs',
     'num_layer': 28, 
@@ -50,7 +50,7 @@ if not os.path.exists(csv_path):
     print(f"Generazione di {CONFIG['n_samples']} sequenze casuali...")
 
     for _ in tqdm(range(CONFIG['n_samples']), desc="Generating sequences"):
-        length = random.randint(*CONFIG['tonb_length_range'])
+        length = random.randint(*CONFIG['arbitrary_length_range'])
         seq = "".join(random.choice(aa_alphabet) for _ in range(length))
         random_proteins.append(seq)
 
