@@ -1,163 +1,160 @@
+import os
+import subprocess
 import pandas as pd
 import numpy as np
-from pathlib import Path
-from Bio import SeqIO, AlignIO, SeqRecord, Seq
+from Bio import AlignIO, SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 from collections import Counter
-from tqdm import tqdm
-import subprocess
 
-# =============================================================================
-# CONFIG
-# =============================================================================
-ALN_DIR = Path('./msa_aln')
-CONSENSUS_DIR = Path('./consensus_msa')
-WT_TONB_FASTA = 'TonB_wt.fa'  # File WT (crealo se non esiste)
+# ---------------------
+# CONFIGURAZIONE 
+# ---------------------
 
-CONSENSUS_FASTA = CONSENSUS_DIR / 'consensus_all_runs.fa'
-CONSENSUS_ALN = CONSENSUS_DIR / 'consensus_all_runs.aln'
-SUMMARY_CONSENSUS = './consensus_summary.csv'
+MSA_DIR = "./msa_aln"              
+OUTPUT_DIR = "./consensus_analysis"
+SEQ_WT_NAME = "TonB_WT"
+SEQ_WT_STR = "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"
 
-# =============================================================================
-# STEP 1: CONSENSUS PER RUN
-# =============================================================================
-def extract_consensus(aln_path, threshold=0.4):
-    """Consensus SENZA Biopython"""
-    run_id = aln_path.stem
-    align = []
-    with open(aln_path) as f:
-        for record in SeqIO.parse(f, 'fasta'):
-            align.append(str(record.seq))
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# ----------------------
+# 1. FUNZIONE CONSENSUS 
+# ----------------------
+
+
+def calculate_robust_consensus(aln_path, min_support=0.1):
+    """
+    Calcola il consensus IGNORANDO i gap (-, X o .), a meno che non siano la quasi totalità.
+    Questo evita che le estremità vengano 'mangiate'.
     
-    L = len(align[0])
-    consensus_seq = ''
-    
-    for pos in range(L):
-        col = [seq[pos] for seq in align]
-        counts = Counter(c for c in col if c != '-')
-        
-        if counts:
-            top_aa, top_freq = counts.most_common(1)[0]
-            if top_freq / len(align) >= threshold:
-                consensus_seq += top_aa
+    min_support=0.1: Basta che il 10% delle sequenze abbia un AA per considerarlo.
+    """
+    try:
+        alignment = AlignIO.read(aln_path, "fasta")
+        length = alignment.get_alignment_length()
+        consensus = []
+
+        for i in range(length):
+            column = alignment[:, i]
+            clean_column = [aa for aa in column if aa not in ['-', 'X', '.']]
+            
+            if not clean_column:
+                consensus.append("") 
             else:
-                consensus_seq += 'X'
-        else:
-            consensus_seq += '-'
-    
-    # Salva FASTA semplice
-    fasta_path = CONSENSUS_DIR / f"{run_id}_consensus.fa"
-    with open(fasta_path, 'w') as f:
-        f.write(f">{run_id}_consensus\n{consensus_seq}\n")
-    
-    return consensus_seq
-# =============================================================================
-# STEP 2: MSA CONSENSUS + WT
-# =============================================================================
-def create_consensus_msa():
-    Path(CONSENSUS_DIR).mkdir(exist_ok=True)
-    
-    consensus_seqs = {}
-    aln_files = list(ALN_DIR.glob('*.aln'))
-    
-    for aln_path in tqdm(aln_files, desc="Consensus"):
-        seq = extract_consensus(aln_path)
-        run_id = aln_path.stem
-        consensus_seqs[run_id] = seq
-    
-    # FASTA multiplo
-    with open(CONSENSUS_FASTA, 'w') as f:
-        for run_id, seq in consensus_seqs.items():
-            f.write(f">{run_id}_consensus\n{seq}\n")
-    
-    # FAMSA
-    subprocess.run(['famsa', '-v', str(CONSENSUS_FASTA), str(CONSENSUS_ALN)], check=True)
-    return CONSENSUS_ALN
-# =============================================================================
-# STEP 3: ANALISI CONSENSUS MEDIO
-# =============================================================================
-def analyze_consensus_msa(aln_path):
-    """Analizza MSA consensus → sequenza media"""
-    align = AlignIO.read(aln_path, 'fasta')
-    L = align.get_alignment_length()
-    
-    # Consensus finale (17 run)
-    final_consensus = ''
-    pos_stats = []
-    
-    for pos in range(L):
-        col = [align[i][pos] for i in range(len(align))]
-        counts = Counter(c for c in col if c != '-')
+                counts = Counter(clean_column)
+                most_common_aa, count = counts.most_common(1)[0]
+                consensus.append(most_common_aa)
+                
+        return "".join(consensus)
         
-        if counts:
-            top_aa, top_freq = counts.most_common(1)[0]
-            final_consensus += top_aa
-            pos_stats.append({
-                'position': pos + 1,
-                'consensus_aa': top_aa,
-                'support': top_freq / len(align),
-                'n_runs': top_freq,
-                'entropy': -sum(f/len(align) * np.log2(f/len(align)+1e-10) 
-                               for f in counts.values())
-            })
+    except Exception as e:
+        print(f"Errore lettura {aln_path}: {e}")
+        return None
+
+# ----------------------
+# 2. ESTRAZIONE 
+# ----------------------
+
+
+print("--- 1. Estrazione Consensus ---")
+records_to_align = []
+
+# WT
+records_to_align.append(SeqRecord(Seq(SEQ_WT_STR), id=SEQ_WT_NAME, description=""))
+
+aln_files = [f for f in os.listdir(MSA_DIR) if f.endswith(".aln") or f.endswith(".fasta")]
+
+for f in aln_files:
+    path = os.path.join(MSA_DIR, f)
+    clean_cons = calculate_robust_consensus(path)
+    
+    if clean_cons:
+        run_id = f.split('.')[0] 
+        if len(clean_cons) > 50:
+            records_to_align.append(SeqRecord(Seq(clean_cons), id=f"Run_{run_id}", description=""))
         else:
-            final_consensus += '-'
-    
-    return final_consensus, pd.DataFrame(pos_stats)
+            print(f"Warning: Consensus per {run_id} troppo corto ({len(clean_cons)})")
 
-# =============================================================================
-# CONFRONTO WT
-# =============================================================================
-def compare_to_wt(consensus_seq, wt_seq):
-    """Differenze consensus vs WT"""
-    diffs = []
-    for i in range(min(len(consensus_seq), len(wt_seq))):
-        if consensus_seq[i] != '-' and wt_seq[i] != '-' and consensus_seq[i] != wt_seq[i]:
-            diffs.append({
-                'position': i + 1,
-                'wt_aa': wt_seq[i],
-                'cons_aa': consensus_seq[i],
-                'change': f"{wt_seq[i]}→{consensus_seq[i]}"
-            })
-    return diffs
+print(f"Recuperate {len(records_to_align)-1} sequenze consensus valide.")
 
-# =============================================================================
-# MAIN
-# =============================================================================
-def main():
-    print("🔬 CONSENSUS PIPELINE - MEDIA ESM TONB")
-    print("-" * 50)
-    
-    # STEP 1-2: Crea MSA consensus
-    consensus_aln = create_consensus_msa()
-    
-    # STEP 3: Analizza
-    print("\n📊 ANALISI CONSENSUS FINALE...")
-    final_consensus, pos_stats = analyze_consensus_msa(consensus_aln)
-    
-    # Salva
-    pos_stats.to_csv(SUMMARY_CONSENSUS, index=False)
-    print(f"✅ Summary: {SUMMARY_CONSENSUS}")
-    
-    # WT confronto (manuale - sostituisci con tua seq WT)
-    wt_seq = "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"
-    diffs = compare_to_wt(final_consensus, wt_seq)
-    
-    print(f"\n🎯 CONSENSUS FINALE (17 run):")
-    print(f"Lunghezza: {len(final_consensus)}")
-    print(f"Supporto medio: {pos_stats['support'].mean():.1%}")
-    print(f"Mutazioni vs WT: {len(diffs)}")
-    
-    print("\n🔥 TOP 10 POSIZIONI CONSENSUS:")
-    print(pos_stats.nlargest(10, 'support')[['position', 'consensus_aa', 'support', 'n_runs']])
-    
-    print("\n🧬 MUTAZIONI CONSENSUS vs WT:")
-    for d in diffs[:10]:
-        print(f"  Pos {d['position']}: {d['change']}")
-    
-    # Salva sequenza finale
-    with open('TonB_ESM_consensus.fa', 'w') as f:
-        f.write(f">TonB_ESM_consensus_17runs\n{final_consensus}\n")
-    print(f"\n💾 Sequenza finale: TonB_ESM_consensus.fa")
+unaligned_path = os.path.join(OUTPUT_DIR, "unaligned.fasta")
+SeqIO.write(records_to_align, unaligned_path, "fasta")
 
-if __name__ == "__main__":
-    main()
+# --------------------------
+# 3. ALLINEAMENTO FAMSA 
+# --------------------------
+
+
+aligned_path = os.path.join(OUTPUT_DIR, "super_alignment.fasta")
+print("--- 2. Riesecuzione FAMSA ---")
+
+famsa_cmd = ["famsa", unaligned_path, aligned_path]
+subprocess.run(famsa_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+print(f"Nuovo allineamento salvato in: {aligned_path}")
+
+# ----------------------
+# 4. MAPPING E ANALISI 
+# ----------------------
+
+
+print("--- 3. Analisi e Mapping ---")
+alignment = AlignIO.read(aligned_path, "fasta")
+
+wt_idx = -1
+for i, rec in enumerate(alignment):
+    if rec.id == SEQ_WT_NAME:
+        wt_idx = i
+        break
+
+mapped_data = []
+wt_residue_counter = 0
+n_cols = alignment.get_alignment_length()
+
+for col_idx in range(n_cols):
+    col_residues = alignment[:, col_idx]
+    wt_aa = col_residues[wt_idx]
+    
+    if wt_aa != "-":
+        wt_residue_counter += 1
+        
+        run_aas = [aa for i, aa in enumerate(col_residues) if i != wt_idx]
+        valid_aas = [aa for aa in run_aas if aa != "-"]
+        
+        if valid_aas:
+            most_common = Counter(valid_aas).most_common(1)[0]
+            top_aa = most_common[0]
+            support_abs = most_common[1]
+        else:
+            top_aa = "-" 
+            support_abs = 0
+            
+        n_runs = len(run_aas)
+        support_pct = (support_abs / n_runs) * 100
+        gap_pct = (run_aas.count("-") / n_runs) * 100
+        
+        # Entropy
+        entropy = 0
+        if valid_aas:
+            counts = Counter(valid_aas)
+            total = len(valid_aas)
+            for k in counts:
+                p = counts[k] / total
+                entropy -= p * np.log2(p)
+        
+        mapped_data.append({
+            "WT_Pos": wt_residue_counter,
+            "WT_AA": wt_aa,
+            "Consensus_Global_AA": top_aa,
+            "Support_Pct": round(support_pct, 2),
+            "Gap_Pct": round(gap_pct, 2),
+            "Entropy_Bits": round(entropy, 3),
+            "Is_Conserved": (top_aa == wt_aa) and (gap_pct < 50),
+            "Is_Mutated": (top_aa != wt_aa) and (top_aa != "-") and (support_pct > 30) # Soglia abbassata a 30% per vedere segnali deboli
+        })
+
+df_mapped = pd.DataFrame(mapped_data)
+csv_out = os.path.join(OUTPUT_DIR, "consensus_mapped.csv")
+df_mapped.to_csv(csv_out, index=False)
+
+print(f"Analisi completata. Controlla {csv_out}")
