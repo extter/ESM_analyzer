@@ -25,7 +25,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device in uso: {device}")
 
 CONFIG = {
-    'target_name': 'DNAbj1',
+    'target_name': 'DNAjb1',
     'n_samples': 100000,
     'max_mutations': 20,
     'seq_ref': "MGKDYYQTLGLARGASDDEIKRAYRRQALRYPDKNKEPGAEEKFKEIAEAYDVLSDPRKREIFDRYGEEGLKGGGPSGGSSGGANGTSFSYTFGDPAMFAEFFGGRNP",
@@ -48,7 +48,7 @@ CONFIG = {
 os.makedirs(CONFIG['output_dir'], exist_ok=True)
 os.makedirs(CONFIG['joblib_dir'], exist_ok=True)
 
-# Nome file CSV specifico per DNAbj1
+# Nome file CSV specifico per DNAjb1
 csv_path = os.path.join(CONFIG['output_dir'], f"{CONFIG['target_name']}_mutations_dataset.csv")
 
 # Inizializzazione BLOSUM62
@@ -188,7 +188,7 @@ print(f"Explained variance ratio (sum): {ipca.explained_variance_ratio_.sum():.4
 # ------------------------
 # 5) SALVATAGGIO
 # ------------------------
-# Nomi file specifici per DNAbj1
+# Nomi file specifici per DNAjb1
 pca_filename = os.path.join(CONFIG['joblib_dir'], f"{CONFIG['target_name']}_ipca_fitted.joblib")
 meta_filename = os.path.join(CONFIG['joblib_dir'], f"{CONFIG['target_name']}_pca_metadata.joblib")
 

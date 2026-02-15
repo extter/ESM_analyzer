@@ -28,8 +28,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device in uso: {device}")
 
 CONFIG = {
-    # --- Target DNAbj1 ---
-    'target_name': 'DNAbj1',
+    # --- Target DNAjb1 ---
+    'target_name': 'DNAjb1',
     'seq_target': "MGKDYYQTLGLARGASDDEIKRAYRRQALRYPDKNKEPGAEEKFKEIAEAYDVLSDPRKREIFDRYGEEGLKGGGPSGGSSGGANGTSFSYTFGDPAMFAEFFGGRNP",
     
     # --- Percorsi File Input ---
@@ -41,7 +41,7 @@ CONFIG = {
     'joblib_dir': './joblibs',
     
     # --- Parametri Dataset ---
-    'samples_per_category': 50000, # 50k Uniref + 50k Random + 50k DNAbj1
+    'samples_per_category': 50000, # 50k Uniref + 50k Random + 50k DNAjb1
     'seq_len_range': (50, 700),    # Range lunghezza per UniRef
     
     # --- Parametri Mutazione ---
@@ -155,10 +155,10 @@ def load_csv_subsample(csv_path, target_n):
 if not os.path.exists(file_dataset_balanced):
     print(f"\n--- Generazione Dataset Bilanciato per {CONFIG['target_name']} ---")
     
-    # A. Generazione Mutanti DNAbj1
+    # A. Generazione Mutanti DNAjb1
     print(f"Generazione 50k mutazioni di {CONFIG['target_name']}...")
     mutants = []
-    for _ in tqdm(range(CONFIG['samples_per_category']), desc="Mutating DNAbj1"):
+    for _ in tqdm(range(CONFIG['samples_per_category']), desc="Mutating DNAjb1"):
         n_mut = random.randint(1, CONFIG['max_mutations'])
         seq = CONFIG['seq_target']
         for _ in range(n_mut):

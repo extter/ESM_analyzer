@@ -28,7 +28,7 @@ blosum = substitution_matrices.load("BLOSUM62")
 AA_LIST = list("ACDEFGHIKLMNPQRSTVWY")
 T_blosum = 1.7 
 
-PCA_PATH = "./../pca/joblibs/Total_DNAjb1_ipca_fitted.joblib"
+PCA_PATH = "../pca/joblibs/Total_DNAjb1_ipca_fitted.joblib"
 pca = joblib.load(PCA_PATH)
 
 pca_components = torch.tensor(pca.components_, dtype=torch.float32, device=device) 
@@ -203,7 +203,9 @@ while True:
     plot_file = f"./runs/{timestamp}_disorder/similarity_plot_{timestamp}.png"
 
     # --- Sequenza target ---
-    seq_target = "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"
+    with open("../../sequences/dnajb1.txt") as f:
+        seq_target = f.read().strip()
+    print(seq_target)
     layer = 28
 
     # --- <MODIFICA>: DEFINIZIONE REGIONE MUTABILE ---
