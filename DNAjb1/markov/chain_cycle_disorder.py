@@ -28,7 +28,7 @@ blosum = substitution_matrices.load("BLOSUM62")
 AA_LIST = list("ACDEFGHIKLMNPQRSTVWY")
 T_blosum = 1.7 
 
-PCA_PATH = "./../pca/joblibs/Total_ipca_fitted.joblib"
+PCA_PATH = "./../pca/joblibs/Total_DNAjb1_ipca_fitted.joblib"
 pca = joblib.load(PCA_PATH)
 
 pca_components = torch.tensor(pca.components_, dtype=torch.float32, device=device) 
