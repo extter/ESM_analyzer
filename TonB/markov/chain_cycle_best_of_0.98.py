@@ -26,10 +26,15 @@ with open(output_file, "w") as fout:
 
     # scorri tutte le run
     for run in sorted(os.listdir(runs_dir)):
+        # salta le cartelle che finiscono con _disorder
+        if run.endswith("_disorder"):
+            continue
+
         run_path = os.path.join(runs_dir, run)
 
         if not os.path.isdir(run_path):
             continue
+
 
         # cerca i file sequences
         for file in os.listdir(run_path):
@@ -65,11 +70,11 @@ with open(output_file, "w") as fout:
 
             # prendi le top 2
             sequences.sort(reverse=True, key=lambda x: x[0])
-            top2 = sequences[:2]
+            top1 = sequences[:1]
 
             fout.write(f"\n===== FILE: {file_path} =====\n")
 
-            for cosine, header, seq in top2:
+            for cosine, header, seq in top1:
                 fout.write(header + "\n")
                 fout.write(seq + "\n")
 
@@ -272,9 +277,9 @@ def cosine_similarity(vec1, vec2):
     vec2 = vec2 / np.linalg.norm(vec2)
     return np.dot(vec1, vec2)
 
-beta_orig = 3000
+beta_orig = 4000
 beta = beta_orig
-n_steps = 2000
+n_steps = 5000
 threshold = 0.99
 lookback = 100   # numero di step per controllare se siamo bloccati
 stuck_threshold = 0  # delta medio <=0 significa catena bloccata
