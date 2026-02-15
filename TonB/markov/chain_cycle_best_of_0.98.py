@@ -295,7 +295,7 @@ def run_markov_chain(seq_start, emb_target, beta_orig, timestamp_prefix="seed"):
 
     os.makedirs(opt_dir, exist_ok=True)
 
-    output_file = f"{opt_dir}/sequences_over_0.98.txt"
+    output_file = f"{opt_dir}/sequences_over_0.99.txt"
     plot_file = f"{opt_dir}/similarity_plot.png"
 
     # --- Random start ---
