@@ -184,10 +184,10 @@ def cosine_similarity(vec1, vec2):
     vec2 = vec2 / np.linalg.norm(vec2)
     return np.dot(vec1, vec2)
 
-beta_orig = 800
+beta_orig = 1400
 beta = beta_orig
-n_steps = 3000
-threshold = 0.99
+n_steps = 7000
+threshold = 0.98
 lookback = 80 
 stuck_threshold = 0  
 
@@ -199,7 +199,7 @@ while True:
     run_dir = f"./runs/{timestamp}_disorder"
     os.makedirs(run_dir, exist_ok=True)
 
-    output_file = f"./runs/{timestamp}_disorder/sequences_over_0.9_{timestamp}.txt"
+    output_file = f"./runs/{timestamp}_disorder/sequences_over_0.98_{timestamp}.txt"
     plot_file = f"./runs/{timestamp}_disorder/similarity_plot_{timestamp}.png"
 
     # --- Sequenza target ---
