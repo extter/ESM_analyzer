@@ -1,6 +1,3 @@
-tonb_sequence = (
-    "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"
-)
 import torch
 import time
 import random
@@ -38,6 +35,11 @@ np.random.seed(SEED)
 torch.manual_seed(SEED)
 
 AMINO_ACIDS = list("ACDEFGHIKLMNPQRSTVWY")
+
+# --- Sequenza target ---
+with open("../../sequences/tonb.txt") as f:
+    tonb_sequence = f.read().strip()
+print(tonb_sequence)
 
 # =====================
 # LOAD MODEL
@@ -156,12 +158,20 @@ def run_mutation_similarity_analysis(tonb_sequence):
 # =====================
 # PLOTTING
 # =====================
-def plot_distributions(similarity_distributions):
+def plot_distributions(similarity_distributions, lower_q=5, upper_q=99):
     plt.figure(figsize=(10, 6))
 
     for k, sims in similarity_distributions.items():
+        sims = np.array(sims)
+
+        # percentili
+        low = np.percentile(sims, lower_q)
+        high = np.percentile(sims, upper_q)
+
+        sims_filtered = sims[(sims >= low) & (sims <= high)]
+
         plt.hist(
-            sims,
+            sims_filtered,
             bins=40,
             alpha=0.4,
             density=True,
@@ -170,9 +180,10 @@ def plot_distributions(similarity_distributions):
 
     plt.xlabel("Cosine similarity")
     plt.ylabel("Density")
+    plt.title("Cosine similarity distribution for TonB (outliers removed)")
     plt.legend()
     plt.tight_layout()
-    plt.savefig("./result.png", dpi = 300)
+    plt.savefig("./result.png", dpi=300)
     plt.show()
 
 # =====================
