@@ -1,0 +1,2 @@
+Start Fine-Tuning Seed 7
+Init Sim: 0.9841215014457703
