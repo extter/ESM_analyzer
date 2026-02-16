@@ -29,7 +29,7 @@ blosum = substitution_matrices.load("BLOSUM62")
 AA_LIST = list("ACDEFGHIKLMNPQRSTVWY")
 T_blosum = 1.7  # temperatura alta = esplorazione ampia
 
-PCA_PATH = "./../pca/joblibs/Total_ipca_fitted.joblib"
+PCA_PATH = "../pca/joblibs/Total_DNAjb1_ipca_fitted.joblib"
 pca = joblib.load(PCA_PATH)
 # Converti PCA su GPU
 pca_components = torch.tensor(pca.components_, dtype=torch.float32, device=device)  # [d_pca, D]
@@ -203,8 +203,10 @@ while True:
     output_file = f"./runs/{timestamp}/sequences_over_0.9_{timestamp}.txt"
     plot_file = f"./runs/{timestamp}/similarity_plot_{timestamp}.png"
 
-    # --- Sequenza iniziale ---
-    seq_target = "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"
+        # --- Sequenza target ---
+    with open("../../sequences/dnajb1.txt") as f:
+        seq_target = f.read().strip()
+    print(seq_target)
     layer = 28
 
     # --- Embedding target ---
@@ -272,7 +274,7 @@ while True:
 
             if sim_current > threshold:
                 with open(output_file, "a") as f_out:
-                    f_out.write(f">step={step+1} cosine_to_tonb={sim_current:.5f} length={len(seq_current)}\n")
+                    f_out.write(f">step={step+1} cosine_to_dnajb1={sim_current:.5f} length={len(seq_current)}\n")
                     f_out.write(seq_current + "\n")
         else:
             not_accepted_counter += 1

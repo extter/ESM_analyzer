@@ -184,9 +184,9 @@ def cosine_similarity(vec1, vec2):
     vec2 = vec2 / np.linalg.norm(vec2)
     return np.dot(vec1, vec2)
 
-beta_orig = 1400
+beta_orig = 800
 beta = beta_orig
-n_steps = 7000
+n_steps = 1000
 threshold = 0.98
 lookback = 80 
 stuck_threshold = 0  
@@ -210,8 +210,8 @@ while True:
 
     # --- <MODIFICA>: DEFINIZIONE REGIONE MUTABILE ---
     # Definisci qui gli indici (0-based: 21 corrisponde al 22esimo amminoacido)
-    IDX_START = 20   
-    IDX_END = 148    
+    IDX_START = 72   
+    IDX_END = 92    
     
     # Tagliamo la proteina in 3 parti: TESTA (fissa) - CORPO (da mutare) - CODA (fissa)
     fixed_head = seq_target[:IDX_START]
@@ -279,10 +279,10 @@ while True:
         info = infos[chosen]
         delta = sim_next - sim_current
 
-        if step >= lookback:
-            recent_deltas = np.diff(sim_history[-lookback:])
-            mean_delta = recent_deltas.mean()
-            beta = beta_orig if mean_delta > stuck_threshold else beta_orig / 8
+        #if step >= lookback:
+        #    recent_deltas = np.diff(sim_history[-lookback:])
+        #    mean_delta = recent_deltas.mean()
+        #    beta = beta_orig if mean_delta > stuck_threshold else beta_orig / 8
 
         if delta >= 0:
             accept = True
@@ -304,7 +304,7 @@ while True:
 
             if sim_current > threshold:
                 with open(output_file, "a") as f_out:
-                    f_out.write(f">step={step+1} cosine_to_tonb={sim_current:.5f} length={len(seq_current)}\n")
+                    f_out.write(f">step={step+1} cosine_to_dnajb1={sim_current:.5f} length={len(seq_current)}\n")
                     f_out.write(seq_current + "\n")
         else:
             not_accepted_counter += 1
