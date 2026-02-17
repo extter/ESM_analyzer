@@ -6,29 +6,46 @@ from Bio import AlignIO, SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from collections import Counter
+import sys
 
-# ---------------------
-# CONFIGURAZIONE 
-# ---------------------
+# ---------------------------------------------
+# ⚙️ SELETTORE MODALITÀ
+# ---------------------------------------------
+MODE = "NORMAL"  # Opzioni: "NORMAL" oppure "OPTIMIZED"
 
-MSA_DIR = "./msa_aln"              
-OUTPUT_DIR = "./consensus_analysis"
+# ---------------------------------------------
+# CONFIGURAZIONE DINAMICA
+# ---------------------------------------------
+if MODE == "NORMAL":
+    MSA_DIR = "./msa_aln"
+    OUTPUT_DIR = "./consensus_analysis"
+    print(f"🔵 GLOBAL CONSENSUS: MODALITÀ NORMAL")
+    print(f"   Input: {MSA_DIR}")
+    print(f"   Output: {OUTPUT_DIR}")
+
+elif MODE == "OPTIMIZED":
+    MSA_DIR = "./msa_aln_opt"
+    OUTPUT_DIR = "./consensus_analysis_opt"
+    print(f"🚀 GLOBAL CONSENSUS: MODALITÀ OPTIMIZED")
+    print(f"   Input: {MSA_DIR}")
+    print(f"   Output: {OUTPUT_DIR}")
+
+else:
+    print("ERRORE: Mode non valido. Usa 'NORMAL' o 'OPTIMIZED'")
+    sys.exit()
+
 SEQ_WT_NAME = "TonB_WT"
 SEQ_WT_STR = "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# ----------------------
-# 1. FUNZIONE CONSENSUS 
-# ----------------------
-
-
+# ---------------------------------------------
+# 1. FUNZIONE CONSENSUS (ROBUST)
+# ---------------------------------------------
 def calculate_robust_consensus(aln_path, min_support=0.1):
     """
-    Calcola il consensus IGNORANDO i gap (-, X o .), a meno che non siano la quasi totalità.
-    Questo evita che le estremità vengano 'mangiate'.
-    
-    min_support=0.1: Basta che il 10% delle sequenze abbia un AA per considerarlo.
+    Calcola il consensus IGNORANDO i gap, utile per evitare che 
+    sequenze parziali rovinino il consensus.
     """
     try:
         alignment = AlignIO.read(aln_path, "fasta")
@@ -37,7 +54,8 @@ def calculate_robust_consensus(aln_path, min_support=0.1):
 
         for i in range(length):
             column = alignment[:, i]
-            clean_column = [aa for aa in column if aa not in ['-', 'X', '.']]
+            # Filtra gap e caratteri ambigui
+            clean_column = [aa for aa in column if aa not in ['-', 'X', '.', '?']]
             
             if not clean_column:
                 consensus.append("") 
@@ -49,112 +67,147 @@ def calculate_robust_consensus(aln_path, min_support=0.1):
         return "".join(consensus)
         
     except Exception as e:
-        print(f"Errore lettura {aln_path}: {e}")
+        print(f"⚠️ Errore lettura {aln_path}: {e}")
         return None
 
-# ----------------------
-# 2. ESTRAZIONE 
-# ----------------------
+# ---------------------------------------------
+# 2. ESTRAZIONE E SUPER-ALLINEAMENTO
+# ---------------------------------------------
 
-
-print("--- 1. Estrazione Consensus ---")
-records_to_align = []
-
-# WT
-records_to_align.append(SeqRecord(Seq(SEQ_WT_STR), id=SEQ_WT_NAME, description=""))
-
-aln_files = [f for f in os.listdir(MSA_DIR) if f.endswith(".aln") or f.endswith(".fasta")]
-
-for f in aln_files:
-    path = os.path.join(MSA_DIR, f)
-    clean_cons = calculate_robust_consensus(path)
+def main():
+    print("-" * 60)
+    print("--- 1. Estrazione Consensus dalle Run ---")
     
-    if clean_cons:
-        run_id = f.split('.')[0] 
-        if len(clean_cons) > 50:
-            records_to_align.append(SeqRecord(Seq(clean_cons), id=f"Run_{run_id}", description=""))
-        else:
-            print(f"Warning: Consensus per {run_id} troppo corto ({len(clean_cons)})")
+    # Check input dir
+    if not os.path.exists(MSA_DIR):
+        print(f"ERRORE: La cartella {MSA_DIR} non esiste. Esegui prima lo Step 1 e 2.")
+        return
 
-print(f"Recuperate {len(records_to_align)-1} sequenze consensus valide.")
+    records_to_align = []
 
-unaligned_path = os.path.join(OUTPUT_DIR, "unaligned.fasta")
-SeqIO.write(records_to_align, unaligned_path, "fasta")
+    # Aggiungi WT (Riferimento assoluto)
+    records_to_align.append(SeqRecord(Seq(SEQ_WT_STR), id=SEQ_WT_NAME, description="Wild Type"))
 
-# --------------------------
-# 3. ALLINEAMENTO FAMSA 
-# --------------------------
-
-
-aligned_path = os.path.join(OUTPUT_DIR, "super_alignment.fasta")
-print("--- 2. Riesecuzione FAMSA ---")
-
-famsa_cmd = ["famsa", unaligned_path, aligned_path]
-subprocess.run(famsa_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-print(f"Nuovo allineamento salvato in: {aligned_path}")
-
-# ----------------------
-# 4. MAPPING E ANALISI 
-# ----------------------
-
-
-print("--- 3. Analisi e Mapping ---")
-alignment = AlignIO.read(aligned_path, "fasta")
-
-wt_idx = -1
-for i, rec in enumerate(alignment):
-    if rec.id == SEQ_WT_NAME:
-        wt_idx = i
-        break
-
-mapped_data = []
-wt_residue_counter = 0
-n_cols = alignment.get_alignment_length()
-
-for col_idx in range(n_cols):
-    col_residues = alignment[:, col_idx]
-    wt_aa = col_residues[wt_idx]
+    # Trova file allineati
+    aln_files = [f for f in os.listdir(MSA_DIR) if f.endswith(".aln") or f.endswith(".fasta")]
     
-    if wt_aa != "-":
-        wt_residue_counter += 1
+    if not aln_files:
+        print("Nessun file .aln trovato.")
+        return
+
+    print(f"Processando {len(aln_files)} file di allineamento...")
+    
+    count_valid = 0
+    for f in aln_files:
+        path = os.path.join(MSA_DIR, f)
+        clean_cons = calculate_robust_consensus(path)
         
-        run_aas = [aa for i, aa in enumerate(col_residues) if i != wt_idx]
-        valid_aas = [aa for aa in run_aas if aa != "-"]
-        
-        if valid_aas:
-            most_common = Counter(valid_aas).most_common(1)[0]
-            top_aa = most_common[0]
-            support_abs = most_common[1]
-        else:
-            top_aa = "-" 
-            support_abs = 0
+        if clean_cons:
+            run_id = f.split('.')[0] 
+            # Filtro lunghezza minima per evitare consensus vuoti
+            if len(clean_cons) > 50:
+                records_to_align.append(SeqRecord(Seq(clean_cons), id=f"Run_{run_id}", description=""))
+                count_valid += 1
+            else:
+                print(f"   -> Skip {run_id}: Consensus troppo corto ({len(clean_cons)} aa)")
+
+    print(f"Recuperate {count_valid} sequenze consensus valide + 1 WT.")
+
+    # Salvataggio pre-allineamento
+    unaligned_path = os.path.join(OUTPUT_DIR, "unaligned.fasta")
+    SeqIO.write(records_to_align, unaligned_path, "fasta")
+
+    # Esecuzione FAMSA (Super Alignment)
+    aligned_path = os.path.join(OUTPUT_DIR, "super_alignment.fasta")
+    print("--- 2. Esecuzione FAMSA (Super Alignment) ---")
+    
+    try:
+        famsa_cmd = ["famsa", unaligned_path, aligned_path]
+        subprocess.run(famsa_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print(f"Super allineamento salvato in: {aligned_path}")
+    except FileNotFoundError:
+        print("ERRORE: FAMSA non trovato. Assicurati che sia installato o nel PATH.")
+        return
+    except subprocess.CalledProcessError:
+        print("ERRORE: FAMSA ha fallito l'allineamento.")
+        return
+
+    # ---------------------------------------------
+    # 3. MAPPING E ANALISI STATISTICA
+    # ---------------------------------------------
+    print("--- 3. Analisi Statistica e Mapping su WT ---")
+    alignment = AlignIO.read(aligned_path, "fasta")
+
+    # Trova indice riga WT
+    wt_idx = -1
+    for i, rec in enumerate(alignment):
+        if rec.id == SEQ_WT_NAME:
+            wt_idx = i
+            break
             
-        n_runs = len(run_aas)
-        support_pct = (support_abs / n_runs) * 100
-        gap_pct = (run_aas.count("-") / n_runs) * 100
-        
-        # Entropy
-        entropy = 0
-        if valid_aas:
-            counts = Counter(valid_aas)
-            total = len(valid_aas)
-            for k in counts:
-                p = counts[k] / total
-                entropy -= p * np.log2(p)
-        
-        mapped_data.append({
-            "WT_Pos": wt_residue_counter,
-            "WT_AA": wt_aa,
-            "Consensus_Global_AA": top_aa,
-            "Support_Pct": round(support_pct, 2),
-            "Gap_Pct": round(gap_pct, 2),
-            "Entropy_Bits": round(entropy, 3),
-            "Is_Conserved": (top_aa == wt_aa) and (gap_pct < 50),
-            "Is_Mutated": (top_aa != wt_aa) and (top_aa != "-") and (support_pct > 30) # Soglia abbassata a 30% per vedere segnali deboli
-        })
+    if wt_idx == -1:
+        print("ERRORE CRITICO: WT persa nell'allineamento!")
+        return
 
-df_mapped = pd.DataFrame(mapped_data)
-csv_out = os.path.join(OUTPUT_DIR, "consensus_mapped.csv")
-df_mapped.to_csv(csv_out, index=False)
+    mapped_data = []
+    wt_residue_counter = 0
+    n_cols = alignment.get_alignment_length()
 
-print(f"Analisi completata. Controlla {csv_out}")
+    for col_idx in range(n_cols):
+        col_residues = alignment[:, col_idx]
+        wt_aa = col_residues[wt_idx]
+        
+        # Mappa SOLO se c'è un residuo nel WT (ignora inserzioni globali rispetto al WT)
+        if wt_aa != "-":
+            wt_residue_counter += 1
+            
+            # Estrai tutti gli AA delle run in questa colonna
+            run_aas = [aa for i, aa in enumerate(col_residues) if i != wt_idx]
+            valid_aas = [aa for aa in run_aas if aa != "-"]
+            
+            n_runs = len(run_aas)
+            if n_runs == 0: continue # Evita division by zero
+
+            if valid_aas:
+                most_common = Counter(valid_aas).most_common(1)[0]
+                top_aa = most_common[0]
+                support_abs = most_common[1]
+            else:
+                top_aa = "-" 
+                support_abs = 0
+                
+            support_pct = (support_abs / n_runs) * 100
+            gap_pct = (run_aas.count("-") / n_runs) * 100
+            
+            # Calcolo Entropia Shannon
+            entropy = 0
+            if valid_aas:
+                counts = Counter(valid_aas)
+                total = len(valid_aas)
+                for k in counts:
+                    p = counts[k] / total
+                    entropy -= p * np.log2(p)
+            
+            mapped_data.append({
+                "WT_Pos": wt_residue_counter,
+                "WT_AA": wt_aa,
+                "Consensus_Global_AA": top_aa,
+                "Support_Pct": round(support_pct, 2),
+                "Gap_Pct": round(gap_pct, 2),
+                "Entropy_Bits": round(entropy, 3),
+                "Is_Conserved": (top_aa == wt_aa) and (gap_pct < 50),
+                # Mutazione rilevante: diversa da WT, non è un gap, supporto decente
+                "Is_Mutated": (top_aa != wt_aa) and (top_aa != "-") and (support_pct > 30)
+            })
+
+    # Salvataggio CSV
+    df_mapped = pd.DataFrame(mapped_data)
+    csv_out = os.path.join(OUTPUT_DIR, "consensus_mapped.csv")
+    df_mapped.to_csv(csv_out, index=False)
+
+    print(f"Analisi completata. Dati salvati in:")
+    print(f"📄 {csv_out}")
+    print("-" * 60)
+
+if __name__ == "__main__":
+    main()

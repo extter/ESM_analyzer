@@ -5,8 +5,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-FASTA_DIR = Path('./msa_fasta')
-ALN_DIR = Path('./msa_aln')
+FASTA_DIR = Path('./msa_fasta_opt')
+ALN_DIR = Path('./msa_aln_opt')
 
 def hamming_distance(s1, s2):
     min_len = min(len(s1), len(s2))

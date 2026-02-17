@@ -4,28 +4,54 @@ import matplotlib.patches as mpatches
 import seaborn as sns
 import numpy as np
 import os
+import sys
 
-# --------------------
-# CONFIGURAZIONE 
-# --------------------
-CSV_PATH = "./consensus_analysis/consensus_mapped.csv"
-OUTPUT_IMG_DIR = "./plots_final"
-TOP_N_RESIDUES = 20 
+# =============================================================================
+# ⚙️ SELETTORE MODALITÀ
+# =============================================================================
+MODE = "OPTIMIZED"  # Opzioni: "NORMAL" oppure "OPTIMIZED"
 
+# =============================================================================
+# CONFIGURAZIONE DINAMICA
+# =============================================================================
+if MODE == "NORMAL":
+    CSV_PATH = "./consensus_analysis/consensus_mapped.csv"
+    OUTPUT_IMG_DIR = "./plots_final"
+    TITLE_SUFFIX = "(Gen 1 - Cos > 0.90)"
+    print(f"🔵 PLOTTING NORMAL")
+    print(f"   Input: {CSV_PATH}")
+    print(f"   Output: {OUTPUT_IMG_DIR}")
+
+elif MODE == "OPTIMIZED":
+    CSV_PATH = "./consensus_analysis_opt/consensus_mapped.csv"
+    OUTPUT_IMG_DIR = "./plots_final_opt"
+    TITLE_SUFFIX = "(Gen 2 - Optimized > 0.995)"
+    print(f"🚀 PLOTTING OPTIMIZED")
+    print(f"   Input: {CSV_PATH}")
+    print(f"   Output: {OUTPUT_IMG_DIR}")
+
+else:
+    print("ERRORE: Mode non valido.")
+    sys.exit()
+
+TOP_N_RESIDUES = 20
 os.makedirs(OUTPUT_IMG_DIR, exist_ok=True)
 
 if not os.path.exists(CSV_PATH):
-    print(f"ERRORE: Non trovo il file {CSV_PATH}")
-    exit()
+    print(f"ERRORE CRITICO: Non trovo il file {CSV_PATH}")
+    print("Hai eseguito lo Step 3 (Consensus Analysis)?")
+    sys.exit()
 
+# Caricamento dati
 df = pd.read_csv(CSV_PATH)
 
+# Setup Stile
 sns.set_style("whitegrid")
 plt.rcParams['font.family'] = 'sans-serif'
 
-# ---------------------------------------------------
-# PLOT 1: MUTATION LANDSCAPE 
-# ---------------------------------------------------
+# =============================================================================
+# PLOT 1: MUTATION LANDSCAPE
+# =============================================================================
 print("Generazione Plot 1: Mutation Landscape...")
 fig, ax = plt.subplots(figsize=(16, 6))
 
@@ -51,7 +77,7 @@ ax.axvspan(150, 239, color='green', alpha=0.05, label='C-Term Domain')
 ax.axhline(50, color='black', linestyle='--', linewidth=0.8, alpha=0.5)
 ax.axhline(80, color='black', linestyle=':', linewidth=0.8, alpha=0.5)
 
-# Etichette per mutazioni forti 
+# Etichette per mutazioni forti (Solo se diverse dal WT)
 strong_muts = df[(df['Consensus_Global_AA'] != df['WT_AA']) & (df['Support_Pct'] > 60)]
 for _, row in strong_muts.iterrows():
     label = f"{row['WT_AA']}{int(row['WT_Pos'])}{row['Consensus_Global_AA']}"
@@ -62,7 +88,7 @@ ax.set_xlim(0, 240)
 ax.set_ylim(0, 115)
 ax.set_xlabel("Residue Position", fontsize=12)
 ax.set_ylabel("Consensus Support (%)", fontsize=12)
-ax.set_title("ESM-2 Evolutionary Landscape of TonB", fontsize=14, fontweight='bold')
+ax.set_title(f"ESM-2 Evolutionary Landscape of TonB {TITLE_SUFFIX}", fontsize=14, fontweight='bold')
 
 legend_patches = [
     mpatches.Patch(color='#4d4d4d', label='Conserved (High Confidence)'),
@@ -75,9 +101,9 @@ plt.tight_layout()
 plt.savefig(f"{OUTPUT_IMG_DIR}/1_Mutation_Landscape.png", dpi=300)
 plt.close()
 
-# ---------------------------------------------------
-# PLOT 2: ENTROPY & DISORDER 
-# ---------------------------------------------------
+# =============================================================================
+# PLOT 2: ENTROPY & DISORDER
+# =============================================================================
 print("Generazione Plot 2: Entropy Profile...")
 fig, ax = plt.subplots(figsize=(16, 5))
 
@@ -89,19 +115,22 @@ ax.axvspan(65, 105, color='orange', alpha=0.1, label='Proline Linker (Disordered
 ax.axvspan(150, 239, color='green', alpha=0.1, label='C-Term Barrel (Folded)')
 
 ax.set_xlim(0, 240)
-ax.set_ylim(0, max(df['Entropy_Bits']) * 1.1)
+# Se l'entropia è zero ovunque (possibile in OPTIMIZED), fissa un minimo per il grafico
+y_max = max(df['Entropy_Bits']) * 1.1 if max(df['Entropy_Bits']) > 0 else 1.0
+
+ax.set_ylim(0, y_max)
 ax.set_xlabel("Residue Position", fontsize=12)
 ax.set_ylabel("Shannon Entropy (Bits)", fontsize=12)
-ax.set_title("Structural Flexibility Profile (Predicted by ESM-2)", fontsize=14, fontweight='bold')
+ax.set_title(f"Structural Flexibility Profile {TITLE_SUFFIX}", fontsize=14, fontweight='bold')
 ax.legend(loc='upper left')
 
 plt.tight_layout()
 plt.savefig(f"{OUTPUT_IMG_DIR}/2_Entropy_Profile.png", dpi=300)
 plt.close()
 
-# ---------------------------------------------------
-# PLOT 3: TOP PILLARS OF STABILITY 
-# ---------------------------------------------------
+# =============================================================================
+# PLOT 3: TOP PILLARS OF STABILITY
+# =============================================================================
 print(f"Generazione Plot 3: Top {TOP_N_RESIDUES} Conserved Residues...")
 
 # 1. Ordina per Supporto % Decrescente 
@@ -131,14 +160,12 @@ for bar in bars:
             f'{height:.1f}%',
             ha='center', va='bottom', fontsize=11, fontweight='bold', color='black')
 
-ax.set_title(f"Top {TOP_N_RESIDUES} Most Frequent Residues across 17 Evolutionary Runs", fontsize=15, fontweight='bold')
+ax.set_title(f"Top {TOP_N_RESIDUES} Most Frequent Residues {TITLE_SUFFIX}", fontsize=15, fontweight='bold')
 ax.set_xlabel("Residue (Consensus AA + Position)", fontsize=13)
 ax.set_ylabel("Frequency / Support (%)", fontsize=13)
 ax.set_ylim(0, 115)
 ax.grid(axis='y', linestyle='--', alpha=0.4)
-
 ax.axhline(100, color='green', linestyle=':', linewidth=1.5, alpha=0.6)
-
 
 legend_patches = [
     mpatches.Patch(color='#1f77b4', label='Native Anchor (Identical to WT)'),
@@ -150,4 +177,4 @@ plt.tight_layout()
 plt.savefig(f"{OUTPUT_IMG_DIR}/3_Top_{TOP_N_RESIDUES}_Residues.png", dpi=300)
 plt.close()
 
-print(f"Grafici salvati in: {OUTPUT_IMG_DIR}")
+print(f"Grafici completati e salvati in: {OUTPUT_IMG_DIR}")
