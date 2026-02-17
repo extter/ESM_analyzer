@@ -1,2 +1,0 @@
-Start Fine-Tuning Seed 4
-Init Sim: 0.9834205508232117

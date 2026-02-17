@@ -1,2 +1,0 @@
-Start Fine-Tuning Seed 5
-Init Sim: 0.9824149012565613

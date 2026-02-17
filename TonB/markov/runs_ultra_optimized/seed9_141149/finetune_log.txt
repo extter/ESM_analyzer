@@ -1,2 +1,0 @@
-Start Fine-Tuning Seed 9
-Init Sim: 0.9868642687797546
