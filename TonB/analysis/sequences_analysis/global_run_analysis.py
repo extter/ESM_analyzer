@@ -26,7 +26,7 @@ if MODE == "NORMAL":
 elif MODE == "OPTIMIZED":
     MSA_DIR = "./msa_aln_opt"
     OUTPUT_DIR = "./consensus_analysis_opt"
-    print(f"🚀 GLOBAL CONSENSUS: MODALITÀ OPTIMIZED")
+    print(f"GLOBAL CONSENSUS: MODALITÀ OPTIMIZED")
     print(f"   Input: {MSA_DIR}")
     print(f"   Output: {OUTPUT_DIR}")
 
