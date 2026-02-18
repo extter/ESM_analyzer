@@ -21,7 +21,7 @@ SEQ_TARGET = "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPE
 
 # Percorsi
 PCA_PATH = "./../pca/joblibs/Total_ipca_fitted.joblib"
-INPUT_SEEDS_FILE = "./best_sequences.txt"
+INPUT_SEEDS_FILE = "./best_sequences_from_runs.txt"
 RUNS_DIR = "./runs_ultra_optimized"
 
 # Parametri ESM / PCA
