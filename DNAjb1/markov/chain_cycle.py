@@ -1,9 +1,7 @@
 import os
 from datetime import datetime
 import gc
-# Configuration
 import torch
-import esm
 import numpy as np
 from Bio import SeqIO
 from scipy.spatial.distance import cosine
@@ -14,13 +12,21 @@ import random
 import math
 from esm import pretrained
 import matplotlib.pyplot as plt
-import torch.nn.functional as F
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 K_PROPOSALS = 8     # numero di mutazioni per step 
 TOP_M = 4         # scegli tra le migliori M
 
+# NUMERO SEGMENTI
+N_SEGMENTS = 8
+
+beta_orig = 800
+beta = beta_orig
+n_steps = 7500
+threshold = 0.9
+lookback = 80   # numero di step per controllare se siamo bloccati
+stuck_threshold = 0  # delta medio <=0 significa catena bloccata
 
 # ------------------------
 # BLOSUM62
@@ -29,7 +35,7 @@ blosum = substitution_matrices.load("BLOSUM62")
 AA_LIST = list("ACDEFGHIKLMNPQRSTVWY")
 T_blosum = 1.7  # temperatura alta = esplorazione ampia
 
-PCA_PATH = "../pca/joblibs/Total_DNAjb1_ipca_fitted.joblib"
+PCA_PATH = "./../pca/joblibs/Total_DNAjb1_ipca_fitted.joblib"
 pca = joblib.load(PCA_PATH)
 # Converti PCA su GPU
 pca_components = torch.tensor(pca.components_, dtype=torch.float32, device=device)  # [d_pca, D]
@@ -43,6 +49,10 @@ model, alphabet = pretrained.esm2_t33_650M_UR50D()
 model = model.to(device)
 model.eval()
 batch_converter = alphabet.get_batch_converter()
+
+with open("../../sequences/dnajb1.txt") as f:
+    seq_target = f.read().strip()
+print(seq_target)
 
 # DEFINITIONS
 
@@ -143,7 +153,7 @@ def segment_pooling_vectorized(reps, n_segments=24):
 # FUNZIONE EMBEDDING OTTIMIZZATA
 # ------------------------
 @torch.no_grad()
-def get_sequence_embeddings_batch(sequences, layer=28, n_segments=24):
+def get_sequence_embeddings_batch(sequences, layer=28, n_segments=N_SEGMENTS):
     """
     sequences: list[str]
     return: np.array [N, n_segments * d_pca]
@@ -185,12 +195,7 @@ def cosine_similarity(vec1, vec2):
     vec2 = vec2 / np.linalg.norm(vec2)
     return np.dot(vec1, vec2)
 
-beta_orig = 800
-beta = beta_orig
-n_steps = 7500
-threshold = 0.9
-lookback = 80   # numero di step per controllare se siamo bloccati
-stuck_threshold = 0  # delta medio <=0 significa catena bloccata
+
 
 
 while True:
@@ -203,10 +208,6 @@ while True:
     output_file = f"./runs/{timestamp}/sequences_over_0.9_{timestamp}.txt"
     plot_file = f"./runs/{timestamp}/similarity_plot_{timestamp}.png"
 
-        # --- Sequenza target ---
-    with open("../../sequences/dnajb1.txt") as f:
-        seq_target = f.read().strip()
-    print(seq_target)
     layer = 28
 
     # --- Embedding target ---
@@ -274,7 +275,7 @@ while True:
 
             if sim_current > threshold:
                 with open(output_file, "a") as f_out:
-                    f_out.write(f">step={step+1} cosine_to_dnajb1={sim_current:.5f} length={len(seq_current)}\n")
+                    f_out.write(f">step={step+1} cosine_to_tonb={sim_current:.5f} length={len(seq_current)}\n")
                     f_out.write(seq_current + "\n")
         else:
             not_accepted_counter += 1
