@@ -16,18 +16,19 @@ from esm import pretrained
 # 1. CONFIGURAZIONE E IPERPARAMETRI
 # -----------------------------------------
 
-# Target: TonB Sequence
-SEQ_TARGET = "MTLDLPRRFPWPTLLSVCIHGAVVAGLLYTSVHQVIELPAPAQPISVTMVTPADLEPPQAVQPPPEPVVEPEPEPEPIPEPPKEAPVVIEKPKPKPKPKPKPVKKVQEQPKRDVKPVESRPASPFENTAPARLTSSTATAATSKPVTSVASGPRALSRNQPQYPARAQALRIEGQVKVKFDVTPDGRVDNVQILSAKPANMFEREVKNAMRRWRYEPGKPGSGIVVNILFKINGTTEIQ"
-
+# Target Sequence
+with open("../../sequences/dnajb1.txt") as f:
+    SEQ_TARGET = f.read().strip()
+print(SEQ_TARGET)
 
 # Percorsi
-PCA_PATH = "./../pca/joblibs/Total_ipca_fitted.joblib"
+PCA_PATH = "./../pca/joblibs/Total_DNAjb1_ipca_fitted.joblib"
 INPUT_SEEDS_FILE = "./best_sequences_from_runs.txt"
 RUNS_DIR = "./runs_ultra_optimized"
 
 # Parametri ESM / PCA
 LAYER = 28
-N_SEGMENTS = 24
+N_SEGMENTS = 8
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Parametri Evoluzione (FINE TUNING)
@@ -79,7 +80,7 @@ with open(output_file, "w") as fout:
                     if match:
                         cosine = float(match.group(1))
 
-                        if cosine > 0.98:
+                        if cosine > 0.975:
                             seq = lines[i+1].strip()
                             sequences.append((cosine, line, seq))
 
