@@ -442,7 +442,7 @@ if __name__ == "__main__":
         if key != 'runs': path.mkdir(parents=True, exist_ok=True)
     
     config = {
-        'threshold': 0.994 if args.mode == "OPTIMIZED" else 0.975,
+        'threshold': 0.994 if args.mode == "OPTIMIZED" else 0.97,
         'n_sample': 300,
         'min_seq_run': 300
     }
