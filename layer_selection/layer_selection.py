@@ -182,7 +182,7 @@ def main():
     plt.title("Layer sensitivity to mutations", size = 15)
     plt.xticks(fontsize = 13)
     plt.yticks(fontsize = 13)
-    plt.legend()
+    plt.legend(fontsize = 13)
     plt.grid()
     plt.savefig("layer_selection.png", dpi=300)
     plt.close()
