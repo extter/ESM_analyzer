@@ -1,0 +1,2 @@
+Start Fine-Tuning Seed 11
+Init Sim: 0.9804196953773499
