@@ -177,9 +177,11 @@ def main():
         subset = df[df["protein"] == protein]
         plt.plot(subset["layer"], subset["ratio"], marker='o', label=protein)
 
-    plt.xlabel("Layer")
-    plt.ylabel("μ_noncons / μ_cons")
-    plt.title("Layer sensitivity to mutations")
+    plt.xlabel("ESM2 Layer", size = 14)
+    plt.ylabel("μ_noncons / μ_cons", size = 14)
+    plt.title("Layer sensitivity to mutations", size = 15)
+    plt.xticks(fontsize = 13)
+    plt.yticks(fontsize = 13)
     plt.legend()
     plt.grid()
     plt.savefig("layer_selection.png", dpi=300)
