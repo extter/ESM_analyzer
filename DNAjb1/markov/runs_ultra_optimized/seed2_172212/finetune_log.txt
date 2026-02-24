@@ -1,0 +1,2 @@
+Start Fine-Tuning Seed 2
+Init Sim: 0.9757992029190063
