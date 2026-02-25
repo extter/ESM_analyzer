@@ -34,9 +34,9 @@ CHARGE_SCALE = {
 
 # Domini strutturali di TonB per coerenza visiva
 TONB_DOMAINS = [
-    {"start": 1, "end": 32, "color": "gray", "alpha": 0.1, "label": "TM Anchor (Rigid)"},
-    {"start": 65, "end": 105, "color": "orange", "alpha": 0.1, "label": "Proline Linker (Disordered?)"},
-    {"start": 150, "end": 239, "color": "green", "alpha": 0.1, "label": "C-Term Barrel (Folded)"}
+    {"start": 1, "end": 32, "color": "blue", "alpha": 0.2, "label": "TM Anchor (Rigid)"},
+    {"start": 65, "end": 105, "color": "orange", "alpha": 0.2, "label": "Proline Linker (Disordered?)"},
+    {"start": 150, "end": 239, "color": "green", "alpha": 0.2, "label": "C-Term Barrel (Folded)"}
 ]
 
 # -----------------------------------------------------------------------------
@@ -148,15 +148,17 @@ for config in plot_configs:
         
     ax.axhline(0 if "Flex" not in config["title"] else 1.0, color='black', linestyle='--', linewidth=1)
     
-    ax.set_xlabel("Residue Position", fontsize=12)
-    ax.set_ylabel(config["ylabel"], fontsize=12)
-    ax.set_title(config["title"], fontsize=14, fontweight='bold', loc='left')
+    ax.set_xlabel("Residue Position", fontsize=15)
+    ax.set_ylabel(config["ylabel"], fontsize=15)
+    ax.tick_params(axis='x', labelsize=15)
+    ax.tick_params(axis='y', labelsize=15)
+    ax.set_title(config["title"], fontsize=18, fontweight='bold', loc='left')
     ax.set_xlim(0, 240)
     
     # Legenda pulita
     handles, labels = ax.get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
-    ax.legend(by_label.values(), by_label.keys(), loc='upper right')
+    ax.legend(by_label.values(), by_label.keys(),loc="best", fontsize = 15)
 
     plt.tight_layout()
     plt.savefig(f"{OUTPUT_DIR}/{config['filename']}", dpi=300)
@@ -169,9 +171,9 @@ print("Generazione Plot 2: Global Biochemical Boxplots...")
 fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 
 metrics = [
-    ("Isoelectric_Point", "pI (Isoelectric Point)", "Il pI determina la carica a pH neutro"),
-    ("Instability_Index", "Instability Index", "< 40 indica una proteina stabile in vivo"),
-    ("GRAVY", "GRAVY (Global Hydrophobicity)", "Valori positivi = Idrofobica")
+    ("Isoelectric_Point", "Isoelectric Point", "pI"),
+    ("Instability_Index", "Instability Index", "Instability index"),
+    ("GRAVY", "GRAVY (Global Hydrophobicity)", "GRAVY")
 ]
 
 wt_row = df_global[df_global["Type"] == "Wild Type"].iloc[0]
@@ -181,16 +183,16 @@ for i, (col, title, desc) in enumerate(metrics):
     
     sns.boxplot(
         data=df_global[df_global["Type"] == "Generated (ESM-2)"], 
-        y=col, color="white", ax=ax, width=0.4, showfliers=False,
-        boxprops=dict(edgecolor='#1f77b4', linewidth=2),
-        whiskerprops=dict(color='#1f77b4', linewidth=2),
-        capprops=dict(color='#1f77b4', linewidth=2),
-        medianprops=dict(color='#1f77b4', linewidth=2)
+        y=col, color="white", ax=ax, width=0.8, showfliers=False,
+        boxprops=dict(edgecolor='#1f77b4', linewidth=4),
+        whiskerprops=dict(color='#1f77b4', linewidth=4),
+        capprops=dict(color='#1f77b4', linewidth=4),
+        medianprops=dict(color='#1f77b4', linewidth=4)
     )
     
     sns.stripplot(
         data=df_global[df_global["Type"] == "Generated (ESM-2)"], 
-        y=col, color="#1f77b4", alpha=0.5, size=5, ax=ax, jitter=True
+        y=col, color="#1f77b4", alpha=0.5, size=8, ax=ax, jitter=True
     )
     
     ax.scatter(0, wt_row[col], color='#d62728', marker='*', s=400, edgecolor='black', zorder=10, label="TonB WT")
@@ -198,12 +200,13 @@ for i, (col, title, desc) in enumerate(metrics):
     if col == "Instability_Index":
         ax.axhline(40, color='red', linestyle=':', label='Stability Threshold (40)')
 
-    ax.set_title(title, fontweight='bold', fontsize=13)
-    ax.set_ylabel(desc, fontsize=11)
+    ax.set_title(title, fontweight='bold', fontsize=18)
+    ax.set_ylabel(desc, fontsize=15)
+    ax.tick_params(axis='y', labelsize=15)
     ax.set_xticks([]) 
-    ax.legend(loc="best")
+    ax.legend(loc="best", fontsize = 15)
 
-plt.suptitle("Global Biochemical Properties: ESM-2 Optimized vs Wild Type", fontsize=16, fontweight='bold')
+plt.suptitle("Global Biochemical Properties: ESM-2 Optimized vs Wild Type", fontsize=20, fontweight='bold')
 plt.tight_layout()
 plt.savefig(f"{OUTPUT_DIR}/2_Global_Metrics_Boxplots.png", dpi=300)
 plt.close()
