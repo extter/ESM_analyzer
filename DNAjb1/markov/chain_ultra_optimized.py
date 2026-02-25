@@ -33,7 +33,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Parametri Evoluzione (FINE TUNING)
 N_STEPS = 6000 
-K_PROPOSALS = 32     
+K_PROPOSALS = 64     
 BETA_START = 5000       
 BETA_MAX = 20000
 
@@ -260,11 +260,10 @@ def load_seeds(filepath):
     # Rimuovi duplicati mantenendo l'ordine
     return list(dict.fromkeys(valid_seeds))
 
-seeds = load_seeds(INPUT_SEEDS_FILE)
+all_seeds = load_seeds(INPUT_SEEDS_FILE)
+
+seeds = list(enumerate(all_seeds))
 print(f"Trovati {len(seeds)} seed validi per il fine-tuning.")
-if len(seeds) == 0:
-    print("Nessun seed trovato. Uso la sequenza target come test.")
-    seeds = [SEQ_TARGET]
 
 emb_target = get_sequence_embeddings_batch([SEQ_TARGET], layer=LAYER)[0]
 
@@ -361,18 +360,28 @@ def run_finetuning(seed_seq, seed_idx):
 # 6. ESECUZIONE
 # -----------------------------------------
 
+
+SELECTED_SEEDS = [16, 17, 18, 2, 3, 4, 5, 8, 9]   # <-- metti qui quelli che vuoi
+# Verifica che gli indici siano validi
+max_index = len(all_seeds) - 1
+for idx in SELECTED_SEEDS:
+    if idx < 0 or idx > max_index:
+        raise ValueError(f"Seed {idx} fuori range. Max disponibile: {max_index}")
+# Manteniamo l'indice originale!
+seeds = [(idx, all_seeds[idx]) for idx in SELECTED_SEEDS]
+print(f"Userai i seed: {SELECTED_SEEDS}")
+
 print("\n--- INIZIO FINE TUNING MASSIVO ---")
-for i, seed in enumerate(seeds):
+for original_idx, seed in seeds:
     try:
-        max_score = run_finetuning(seed, i)
-        print(f"Seed {i} completato. Max Score: {max_score:.6f}")
-        
+        max_score = run_finetuning(seed, original_idx)
+        print(f"Seed {original_idx} completato. Max Score: {max_score:.6f}")        
         # Pulizia memoria GPU tra un seed e l'altro
         gc.collect()
         torch.cuda.empty_cache()
         
     except Exception as e:
-        print(f"Errore sul seed {i}: {e}")
+        print(f"Errore sul seed {original_idx}: {e}")
         continue
 
 print("\nTutte le run completate.")
