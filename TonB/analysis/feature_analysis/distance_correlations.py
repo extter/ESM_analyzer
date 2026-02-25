@@ -92,11 +92,18 @@ print(results_df.head(10))
 
 
 
-plt.figure(figsize=(7,6))
-sns.regplot(x=df_runs["dist_to_TonB"], y=embedding_distance, ci=None, scatter_kws={"s":100, "color":"skyblue"}, line_kws={"color":"red"})
-plt.xlabel("Distanza Euclidea feature vs TonB")
-plt.ylabel("Cosine distance embedding vs TonB")
-plt.title(f"Distanza feature vs embedding\nSpearman: {rho:.3f}, Pearson: {r_pearson:.3f}")
+plt.figure(figsize=(12,8))
+sns.regplot(x=df_runs["dist_to_TonB"], y=embedding_distance, ci=None, scatter_kws={"s":100, "color":"black"}, line_kws={"color":"red"})
+plt.xticks(fontsize = 14)
+plt.yticks(fontsize = 14)
+plt.xlabel("Feature distance protein vs TonB", size=16, color='black')
+plt.ylabel("Embedding distance protein vs TonB", size=16, color='black')
+plt.title(
+    f"Correlation between embedding and feature distances (best of 13 runs)\n"
+    f"Spearman: ρ = {rho:.3f} (p = {pval:.2e})   |   "
+    f"Pearson: r = {r_pearson:.3f} (p = {pval_pearson:.2e})",
+    size=18
+)
 plt.grid(True)
 plt.tight_layout()
 plt.savefig("features_folder/distance_vs_embedding.png", dpi=200)
