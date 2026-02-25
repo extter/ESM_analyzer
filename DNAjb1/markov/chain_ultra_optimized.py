@@ -306,8 +306,7 @@ def run_finetuning(seed_seq, seed_idx):
         candidates = []
         infos = []
         for _ in range(K_PROPOSALS):
-            temp = 1.5 - (1.0 * progress) 
-            s, info = markov_step_adaptive(current_seq, current_sim, T=temp)
+            s, info = markov_step_adaptive(current_seq, current_sim)
             candidates.append(s)
             infos.append(info)
             
