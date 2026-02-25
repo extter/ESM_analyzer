@@ -228,14 +228,17 @@ def mutate_residue(seq, T=1.5):
 
 def markov_step_adaptive(seq, current_sim):
     
-    # --- STADIO 2: ENDGAME ---
+    # ENDGAME
     if current_sim > 0.99:
         return mutate_residue(seq, T=0.8) 
     
-    # --- STADIO 1: CLIMBING ---
+    # CLIMBING
     elif current_sim > 0.98:
-        return mutate_residue(seq, T=1.0) 
-
+        return mutate_residue(seq, T=1.0)
+    
+    # APPROACH
+    else:
+        return mutate_residue(seq, T=1.5)
 # -----------------------------------------
 # 4. CARICAMENTO SEEDS
 # -----------------------------------------
