@@ -1,0 +1,2 @@
+Start Fine-Tuning Seed 16
+Init Sim: 0.9783042669296265
