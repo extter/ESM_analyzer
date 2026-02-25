@@ -226,40 +226,15 @@ def mutate_residue(seq, T=1.5):
     seq_list[idx] = new_aa
     return "".join(seq_list), f"Mut {original}{idx+1}{new_aa}"
 
-def insert_residue(seq):
-    seq_list = list(seq)
-    idx = random.randrange(len(seq_list)+1)
-    aa = random.choice(AA_LIST)
-    seq_list.insert(idx, aa)
-    return "".join(seq_list), f"Ins {aa}@{idx+1}"
-
-def delete_residue(seq):
-    if len(seq) <= 10: return seq, "NoDel"
-    seq_list = list(seq)
-    idx = random.randrange(len(seq_list))
-    removed = seq_list.pop(idx)
-    return "".join(seq_list), f"Del {removed}@{idx+1}"
-
-def markov_step_adaptive(seq, current_sim, T=1.5):
-    """Sceglie la mutazione con strategia a 3 stadi."""
-    r = random.random()
+def markov_step_adaptive(seq, current_sim):
     
-    # --- STADIO 3: ENDGAME (Solo se siamo > 0.9935) ---
-    if current_sim > 0.994:
+    # --- STADIO 2: ENDGAME ---
+    if current_sim > 0.99:
         return mutate_residue(seq, T=0.8) 
     
-    # --- STADIO 2: CLIMBING (Siamo tra 0.99 e 0.9935) ---
-    elif current_sim > 0.99:
+    # --- STADIO 1: CLIMBING ---
+    elif current_sim > 0.98:
         return mutate_residue(seq, T=1.0) 
-    
-    # --- STADIO 1: APPROACH (< 0.99) ---
-    else:
-        if r < 0.90:
-            return mutate_residue(seq, T=T)
-        elif r < 0.95:
-            return insert_residue(seq)
-        else:
-            return delete_residue(seq)
 
 # -----------------------------------------
 # 4. CARICAMENTO SEEDS
