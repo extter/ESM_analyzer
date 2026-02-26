@@ -1,2 +1,0 @@
-Start Fine-Tuning Seed 17
-Init Sim: 0.9751173257827759
