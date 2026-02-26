@@ -364,7 +364,7 @@ def run_finetuning(seed_seq, seed_idx):
 # -----------------------------------------
 
 
-SELECTED_SEEDS = [16, 17, 18, 2, 3, 4, 5, 8, 9]   # <-- metti qui quelli che vuoi
+SELECTED_SEEDS = [2, 3, 4, 5, 8, 9]   # <-- metti qui quelli che vuoi
 # Verifica che gli indici siano validi
 max_index = len(all_seeds) - 1
 for idx in SELECTED_SEEDS:
