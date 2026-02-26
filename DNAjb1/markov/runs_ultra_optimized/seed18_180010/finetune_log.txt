@@ -1,0 +1,2 @@
+Start Fine-Tuning Seed 18
+Init Sim: 0.9828861951828003

@@ -106,18 +106,32 @@ print(results_df.head(10))
 # ==============================
 # 8️⃣ Grafico distanza feature vs embedding distance
 # ==============================
-plt.figure(figsize=(7,6))
-sns.regplot(
-    x=df_runs["dist_to_TonB"], 
-    y=embedding_distance, 
-    ci=None, 
-    scatter_kws={"s":100, "color":"skyblue"}, 
-    line_kws={"color":"red"}
+plt.figure(figsize=(12, 8))
+
+# Convertiamo in array 1D
+x = df_runs["dist_to_TonB"].to_numpy()
+y = np.array(embedding_distance)  # già 1D
+
+# Scatter plot
+plt.scatter(x, y, s=100, color="black", zorder=10)
+
+# Linee che collegano punti consecutivi
+plt.plot(x, y, color="gray", linewidth=1.5, alpha=0.5, zorder=5)
+
+# Regression line (senza scatter)
+sns.regplot(x=x, y=y, ci=None, scatter=False, line_kws={"color":"red", "linewidth":2})
+
+plt.xlabel("Feature distance protein vs TonB", size=15)
+plt.ylabel("Embedding distance protein vs TonB", size=15)
+plt.xticks(fontsize=14)
+plt.yticks(fontsize=14)
+plt.title(
+    f"Correlation between embedding and feature distances (best of 13 runs)\n"
+    f"Spearman: ρ = {rho:.3f} (p = {pval:.2e})   |   "
+    f"Pearson: r = {r_pearson:.3f} (p = {pval_pearson:.2e})",
+    size=16
 )
-plt.xlabel("Distanza Euclidea feature vs TonB")
-plt.ylabel("Cosine distance embedding vs TonB")
-plt.title(f"Distanza feature vs embedding\nSpearman: {rho:.3f}, Pearson: {r_pearson:.3f}")
 plt.grid(True)
 plt.tight_layout()
-plt.savefig(os.path.join(output_folder, "distance_vs_embedding_per_run.png"), dpi=200)
+plt.savefig(os.path.join(output_folder, "distance_vs_embedding_with_lines.png"), dpi=200)
 plt.show()
