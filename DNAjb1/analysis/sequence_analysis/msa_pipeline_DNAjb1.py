@@ -442,11 +442,11 @@ if __name__ == "__main__":
         if key != 'runs': path.mkdir(parents=True, exist_ok=True)
     
     config = {
-        'threshold': 0.994 if args.mode == "OPTIMIZED" else 0.97,
+        'threshold': 0.99 if args.mode == "OPTIMIZED" else 0.97,
         'n_sample': 300,
         'min_seq_run': 300
     }
-    title_suffix = "(Gen 2 - Optimized > 0.995)" if args.mode == "OPTIMIZED" else "(Gen 1 - Cos > 0.90)"
+    title_suffix = "(Gen 2 - Optimized > 0.99)" if args.mode == "OPTIMIZED" else "(Gen 1 - Cos > 0.90)"
 
     print(f"=== AVVIO PIPELINE MSA [{args.mode}] ===")
     

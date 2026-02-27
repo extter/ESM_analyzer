@@ -9,11 +9,11 @@ from Bio.SeqUtils.ProtParam import ProteinAnalysis
 # -----------------------------------------------------------------------------
 # CONFIGURAZIONE E COSTANTI
 # -----------------------------------------------------------------------------
-INPUT_FASTA = "../../sequences_analysis/analysis_optimized/5_consensus_data/unaligned.fasta"
+INPUT_FASTA = "../sequence_analysis/analysis_optimized/5_consensus_data/unaligned.fasta"
 OUTPUT_DIR = "./biochemical_analysis/biochemical_plots"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-SEQ_WT_NAME = "TonB_WT"
+SEQ_WT_NAME = "DNAjb1_WT"
 
 
 # Scala di Idrofobicità di Kyte-Doolittle
@@ -31,11 +31,10 @@ CHARGE_SCALE = {
     'M': 0, 'F': 0, 'P': 0, 'S': 0, 'T': 0, 'W': 0, 'Y': 0, 'V': 0
 }
 
-# Domini strutturali di TonB per coerenza visiva
-TONB_DOMAINS = [
-    {"start": 1, "end": 32, "color": "blue", "alpha": 0.2, "label": "TM Anchor (Rigid)"},
-    {"start": 65, "end": 105, "color": "orange", "alpha": 0.2, "label": "Proline Linker (Disordered)"},
-    {"start": 150, "end": 239, "color": "green", "alpha": 0.2, "label": "C-Term Barrel (Folded)"}
+# Domini strutturali di DNAjb1 per coerenza visiva
+DNAjb1_DOMAINS = [
+    {"start": 1, "end": 70, "color": "purple", "alpha": 0.1, "label": "J-Domain (Alpha-Helical)"},
+    {"start": 71, "end": 108, "color": "yellow", "alpha": 0.1, "label": "G/F-rich Region (Flexible)"}
 ]
 
 # -----------------------------------------------------------------------------
@@ -139,10 +138,10 @@ for config in plot_configs:
     # Linea WT
     wt_d = next((d for d in dataset if d["Type"] == "Wild Type"), None)
     if wt_d:
-        ax.plot(wt_d["x"], wt_d["y"], color='#d62728', linewidth=3.0, label='TonB Wild Type', zorder=10)
+        ax.plot(wt_d["x"], wt_d["y"], color='#d62728', linewidth=3.0, label='DNAjb1 Wild Type', zorder=10)
         
     # Domini
-    for dom in TONB_DOMAINS:
+    for dom in DNAjb1_DOMAINS:
         ax.axvspan(dom["start"], dom["end"], color=dom["color"], alpha=dom["alpha"], label=dom["label"])
         
     ax.axhline(0 if "Flex" not in config["title"] else 1.0, color='black', linestyle='--', linewidth=1)
@@ -152,7 +151,7 @@ for config in plot_configs:
     ax.tick_params(axis='x', labelsize=15)
     ax.tick_params(axis='y', labelsize=15)
     ax.set_title(config["title"], fontsize=18, fontweight='bold', loc='left')
-    ax.set_xlim(0, 240)
+    ax.set_xlim(0, 109)
     
     # Legenda pulita
     handles, labels = ax.get_legend_handles_labels()
@@ -194,7 +193,7 @@ for i, (col, title, desc) in enumerate(metrics):
         y=col, color="#1f77b4", alpha=0.5, size=8, ax=ax, jitter=True
     )
     
-    ax.scatter(0, wt_row[col], color='#d62728', marker='*', s=400, edgecolor='black', zorder=10, label="TonB WT")
+    ax.scatter(0, wt_row[col], color='#d62728', marker='*', s=400, edgecolor='black', zorder=10, label="DNAjb1 WT")
     
     if col == "Instability_Index":
         ax.axhline(40, color='red', linestyle=':', label='Stability Threshold (40)')
