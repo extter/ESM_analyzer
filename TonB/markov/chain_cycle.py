@@ -296,11 +296,13 @@ while True:
         color = 'green' if accepted else 'red'
         plt.scatter(steps[i], sim_history[i], color=color, s=100, edgecolors='k', zorder=5)
 
-    plt.xlabel("Step della Markov chain")
-    plt.ylabel("Cosine similarity con target")
-    plt.title(f"Evoluzione similitudine - timestamp {timestamp}")
+    plt.xlabel("Markov chain step", size = 16)
+    plt.ylabel("Cosine similarity with target", size = 17)
+    plt.yticks(fontsize=15)
+    plt.xticks(fontsize=16)
+    plt.title(f"Monte Carlo Markov Chain for TonB", size = 18)
     plt.grid(True)
-    plt.legend(["Cosine similarity", "Accettata (verde) / Rifiutata (rosso)"])
+    plt.legend(["Cosine similarity", "Accepted (green) / Rejected (red)"], fontsize = 16)
     plt.savefig(plot_file)
     plt.close()
 

@@ -33,10 +33,10 @@ SEQ_HB = "VLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAV
 AA_ALPHABET = list("ACDEFGHIKLMNPQRSTVWY")
 
 PCA_CONFIGS = [
-    {"name": "PCA_Random", "pca_path": "./joblibs/Random_ipca_fitted.joblib", "esm_layer": ESM_LAYER},
-    {"name": "PCA_Uniref", "pca_path": "./joblibs/Uniref_ipca_fitted.joblib", "esm_layer": ESM_LAYER},
-    {"name": "PCA_TonB", "pca_path": "./joblibs/Tonb_ipca_fitted.joblib", "esm_layer": ESM_LAYER},
-    {"name": "PCA_Total", "pca_path": "./joblibs/Combined_ipca_fitted.joblib", "esm_layer": ESM_LAYER},
+    {"name": "PCA_Random", "pca_path": "./joblibs/Random_ipca_640comp_100k.joblib", "esm_layer": ESM_LAYER},
+    {"name": "PCA_Uniref", "pca_path": "./joblibs/Uniref_640comp_100k.joblib", "esm_layer": ESM_LAYER},
+    {"name": "PCA_TonB", "pca_path": "./joblibs/TonB_ipca_fitted_final.joblib", "esm_layer": ESM_LAYER},
+    {"name": "PCA_Total", "pca_path": "./joblibs/Total_ipca_fitted.joblib", "esm_layer": ESM_LAYER},
 ]
 
 # -----------------------------------------------------------------------------
@@ -160,19 +160,40 @@ def get_global_embeddings_batch(seqs, ipca, esm_layer, pooling_mode="mean", n_se
 def plot_results(data_list, title, save_path):
     """Genera e salva il boxplot standard per l'analisi."""
     labels = ["TonB vs Cons", "TonB vs Rand", "TonB vs UniRef", "Rand vs Rand", "UniRef vs UniRef"]
-    
+
     fig, ax = plt.subplots(figsize=(11, 6))
-    ax.boxplot(data_list, widths=0.5, showfliers=True, patch_artist=True)
+
+    ax.boxplot(
+        data_list,
+        widths=0.5,
+        showfliers=True,
+        patch_artist=True,
+        boxprops=dict(linewidth=2),
+        whiskerprops=dict(linewidth=2),
+        capprops=dict(linewidth=2),
+        medianprops=dict(linewidth=2.5),
+        flierprops=dict(markeredgewidth=1.5)
+    )
+    # Ticks asse x
     ax.set_xticks(np.arange(1, len(labels) + 1))
-    ax.set_xticklabels(labels, rotation=20, ha="right")
-    ax.set_ylabel("Cosine similarity")
-    ax.set_ylim(-1.0, 1.0)
-    ax.set_title(title, fontweight="bold")
+    ax.set_xticklabels(labels, rotation=20, ha="right", fontsize=16)
+
+    # Ticks asse y
+    ax.tick_params(axis='y', labelsize=14)
+
+    # Label assi
+    ax.set_ylabel("Cosine similarity", fontsize=16)
+    ax.set_xlabel("Comparison", fontsize=16)
+
+    # Titolo
+    ax.set_title(title, fontsize=18, fontweight="bold")
+
+    ax.set_ylim(-1.0, 1.05)
     ax.grid(True, axis="y", alpha=0.3)
-    
+
     plt.tight_layout()
     plt.savefig(save_path, dpi=300)
-    plt.close() 
+    plt.close()
 
 def esegui_analisi(pooling_mode):
     """
@@ -230,7 +251,7 @@ def esegui_analisi(pooling_mode):
         out_dir = OUT_DIR_MEAN if pooling_mode == "mean" else OUT_DIR_SEG
         fname = f"boxplot_{pooling_mode}_pooling_{cfg['name']}.png"
         
-        plot_results(data_to_plot, f"PCA: {cfg['name']} - {pooling_mode.capitalize()} Pooling", os.path.join(out_dir, fname))
+        plot_results(data_to_plot, f"PCA method: {cfg['name']} - {pooling_mode.capitalize()} Pooling", os.path.join(out_dir, fname))
 
 if __name__ == "__main__":
     esegui_analisi(pooling_mode="mean")
