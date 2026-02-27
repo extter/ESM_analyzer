@@ -306,35 +306,52 @@ for cfg in PCA_CONFIGS:
     ]
     
     labels = [
-        "DNAjb1 vs Conservative",
-        "DNAjb1 vs Random",
+        "DNAjb1 vs Cons",
+        "DNAjb1 vs Rand",
         "DNAjb1 vs UniRef",
-        "Random vs Random",
+        "Rand vs Rand",
         "UniRef vs UniRef"
     ]
     
     fig, ax = plt.subplots(figsize=(11, 6))
-    
+
     ax.boxplot(
         data,
         widths=0.5,
         showfliers=True,
-        patch_artist=True
+        patch_artist=True,
+        boxprops=dict(linewidth=2),
+        whiskerprops=dict(linewidth=2),
+        capprops=dict(linewidth=2),
+        medianprops=dict(linewidth=2.5),
+        flierprops=dict(markeredgewidth=1.5)
     )
-    
+
+    # Ticks asse x
     ax.set_xticks(np.arange(1, len(labels) + 1))
-    ax.set_xticklabels(labels, rotation=20, ha="right")
-    ax.set_ylabel("Cosine similarity")
-    ax.set_ylim(-1.0, 1.0)
-    ax.set_title(f"PCA: {cfg['name']} – Mean Pooling", fontweight="bold")
+    ax.set_xticklabels(labels, rotation=20, ha="right", fontsize=16)
+
+    # Ticks asse y
+    ax.tick_params(axis='y', labelsize=14)
+
+    # Label assi
+    ax.set_ylabel("Cosine similarity", fontsize=16)
+    ax.set_xlabel("Comparison", fontsize=16)
+
+    # Titolo
+    ax.set_title(f"PCA: {cfg['name']} – Mean Pooling",
+                fontsize=18,
+                fontweight="bold")
+
+    ax.set_ylim(-1.0, 1.05)
     ax.grid(True, axis="y", alpha=0.3)
-    
+
     plt.tight_layout()
-    
+
     fname = f"boxplot_mean_pooling_{cfg['name'].replace(' ', '_')}.png"
     save_path = os.path.join(OUT_DIR, fname)
     plt.savefig(save_path, dpi=300)
-    plt.show()
+    plt.close()
 
 
     print("\n==================== ANALISI MULTI-PCA su random, uniref, hb (SEGMENT POOLING) ====================\n")
@@ -402,34 +419,49 @@ for cfg in PCA_CONFIGS:
     ]
     
     labels = [
-        "DNAjb1 vs Conservative",
-        "DNAjb1 vs Random",
+        "DNAjb1 vs Cons",
+        "DNAjb1 vs Rand",
         "DNAjb1 vs UniRef",
-        "Random vs Random",
+        "Rand vs Rand",
         "UniRef vs UniRef"
     ]
-    
     fig, ax = plt.subplots(figsize=(11, 6))
-    
+
     ax.boxplot(
         data,
         widths=0.5,
         showfliers=True,
-        patch_artist=True
+        patch_artist=True,
+        boxprops=dict(linewidth=2),
+        whiskerprops=dict(linewidth=2),
+        capprops=dict(linewidth=2),
+        medianprops=dict(linewidth=2.5),
+        flierprops=dict(markeredgewidth=1.5)
     )
-    
+
+    # Ticks asse x
     ax.set_xticks(np.arange(1, len(labels) + 1))
-    ax.set_xticklabels(labels, rotation=20, ha="right")
-    ax.set_ylabel("Cosine similarity")
-    ax.set_ylim(-1.0, 1.0)
-    ax.set_title(f"PCA: {cfg['name']} – Segment Pooling", fontweight="bold")
+    ax.set_xticklabels(labels, rotation=20, ha="right", fontsize=16)
+
+    # Ticks asse y
+    ax.tick_params(axis='y', labelsize=14)
+
+    # Label assi
+    ax.set_ylabel("Cosine similarity", fontsize=16)
+    ax.set_xlabel("Comparison", fontsize=16)
+
+    # Titolo
+    ax.set_title(f"PCA: {cfg['name']} – Segment Pooling",
+                fontsize=18,
+                fontweight="bold")
+
+    ax.set_ylim(-1.0, 1.05)
     ax.grid(True, axis="y", alpha=0.3)
-    
+
     plt.tight_layout()
-    
+
     fname = f"boxplot_segment_pooling_{cfg['name'].replace(' ', '_')}.png"
     save_path = os.path.join(OUT2_DIR, fname)
     plt.savefig(save_path, dpi=300)
-    plt.show()
-
+    plt.close()
 
