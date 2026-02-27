@@ -106,16 +106,16 @@ ax = sns.regplot(
     line_kws={"color": "red"}
 )
 
-plt.xticks(fontsize=14)
-plt.yticks(fontsize=14)
+plt.xticks(fontsize=15)
+plt.yticks(fontsize=15)
 
-plt.xlabel("Feature distance protein vs TonB", size=16, color="black")
-plt.ylabel("Embedding distance protein vs TonB", size=16, color="black")
+plt.xlabel("Feature distance protein vs TonB", size=17, color="black")
+plt.ylabel("Embedding distance protein vs TonB", size=17, color="black")
 
 plt.title(
     "Correlation between embedding and feature distances\n"
     "Best of 13 runs",
-    size=18
+    size=20
 )
 
 # Box Spearman
@@ -124,7 +124,7 @@ plt.text(
     0.05, 0.95,
     text_spearman,
     transform=ax.transAxes,
-    fontsize=13,
+    fontsize=17,
     verticalalignment="top",
     bbox=dict(boxstyle="round", facecolor="white", edgecolor="black")
 )
@@ -132,10 +132,10 @@ plt.text(
 # Box Pearson
 text_pearson = f"Pearson\nr = {r_pearson:.3f}\np = {pval_pearson:.2e}"
 plt.text(
-    0.75, 0.95,
+    0.05, 0.75,
     text_pearson,
     transform=ax.transAxes,
-    fontsize=13,
+    fontsize=17,
     verticalalignment="top",
     bbox=dict(boxstyle="round", facecolor="white", edgecolor="black")
 )
