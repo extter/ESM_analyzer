@@ -1,0 +1,2 @@
+Start Fine-Tuning Seed 3
+Init Sim: 0.9773769974708557

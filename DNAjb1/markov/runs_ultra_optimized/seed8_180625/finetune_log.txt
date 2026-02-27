@@ -1,0 +1,2 @@
+Start Fine-Tuning Seed 8
+Init Sim: 0.9784430265426636
