@@ -92,18 +92,54 @@ print(results_df.head(10))
 
 
 
-plt.figure(figsize=(12,8))
-sns.regplot(x=df_runs["dist_to_TonB"], y=embedding_distance, ci=None, scatter_kws={"s":100, "color":"black"}, line_kws={"color":"red"})
-plt.xticks(fontsize = 14)
-plt.yticks(fontsize = 14)
-plt.xlabel("Feature distance protein vs TonB", size=16, color='black')
-plt.ylabel("Embedding distance protein vs TonB", size=16, color='black')
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+plt.style.use("default")  # sfondo bianco
+plt.figure(figsize=(12, 8))
+
+ax = sns.regplot(
+    x=df_runs["dist_to_TonB"],
+    y=embedding_distance,
+    ci=None,
+    scatter_kws={"s": 100, "color": "black"},
+    line_kws={"color": "red"}
+)
+
+plt.xticks(fontsize=14)
+plt.yticks(fontsize=14)
+
+plt.xlabel("Feature distance protein vs TonB", size=16, color="black")
+plt.ylabel("Embedding distance protein vs TonB", size=16, color="black")
+
 plt.title(
-    f"Correlation between embedding and feature distances (best of 13 runs)\n"
-    f"Spearman: ρ = {rho:.3f} (p = {pval:.2e})   |   "
-    f"Pearson: r = {r_pearson:.3f} (p = {pval_pearson:.2e})",
+    "Correlation between embedding and feature distances\n"
+    "Best of 13 runs",
     size=18
 )
+
+# Box Spearman
+text_spearman = f"Spearman\nρ = {rho:.3f}\np = {pval:.2e}"
+plt.text(
+    0.05, 0.95,
+    text_spearman,
+    transform=ax.transAxes,
+    fontsize=13,
+    verticalalignment="top",
+    bbox=dict(boxstyle="round", facecolor="white", edgecolor="black")
+)
+
+# Box Pearson
+text_pearson = f"Pearson\nr = {r_pearson:.3f}\np = {pval_pearson:.2e}"
+plt.text(
+    0.75, 0.95,
+    text_pearson,
+    transform=ax.transAxes,
+    fontsize=13,
+    verticalalignment="top",
+    bbox=dict(boxstyle="round", facecolor="white", edgecolor="black")
+)
+
 plt.grid(True)
 plt.tight_layout()
 plt.savefig("features_folder/distance_vs_embedding.png", dpi=200)
