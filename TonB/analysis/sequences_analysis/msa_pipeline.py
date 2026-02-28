@@ -341,9 +341,9 @@ def step_global_consensus_and_plot(dirs, title_suffix):
 
     ax.set_xlim(0, 240)
     ax.set_ylim(0, 115)
-    ax.set_xlabel("Residue Position", fontsize=12)
-    ax.set_ylabel("Consensus Support (%)", fontsize=12)
-    ax.set_title(f"ESM-2 Evolutionary Landscape of TonB {title_suffix}", fontsize=14, fontweight='bold')
+    ax.set_xlabel("Residue Position", fontsize=14)
+    ax.set_ylabel("Consensus Support (%)", fontsize=14)
+    ax.set_title(f"ESM-2 Evolutionary Landscape of TonB", fontsize=18, fontweight='bold')
 
     legend_patches = [
         mpatches.Patch(color='#4d4d4d', label='Conserved (High Confidence)'),
