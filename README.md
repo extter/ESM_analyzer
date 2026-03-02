@@ -296,7 +296,7 @@ Run:
 
 ```bash
 python3 chain_cycle.py
-
+```
 
 # Stage 2 — `chain_ultra_optimized.py`
 
@@ -473,7 +473,7 @@ After completing several `chain_cycle.py` runs:
 
 ```bash
 python3 chain_ultra_optimized.py
-
+```
 
 ***
 
