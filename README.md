@@ -107,53 +107,372 @@ Instead, this module implements **segment-based pooling**:
 > - More segments → higher resolution, more noise.
 
 ***
+## `markov/` — Evolution Simulation in PCA-Transformed Embedding Space
 
-### `markov/` *(Core module)*
+This module implements a Monte Carlo Markov Chain (MCMC) simulation that performs sequence evolution **directly in the PCA-transformed ESM-2 embedding space**.
 
-The **heart of the project**: a simulation of protein evolution in embedding space using **Markov Chains**.
+The workflow is divided into two stages:
 
-#### Main Script: `chain_cycle.py`
+1. `chain_cycle.py` — standard MCMC evolution  
+2. `chain_ultra_optimized.py` — second-stage refinement (run only after the first script)
 
-- Operates in the **PCA-transformed embedding space** (640 components).
-- **Cosine similarity** computed using segment-based pooling.
-- Starts from a random **239–AA sequence**.
+---
+
+# Stage 1 — `chain_cycle.py`
+
+## Overview
+
+This script performs stochastic protein evolution toward a fixed target (TonB) by maximizing **cosine similarity in embedding space**.
+
+The simulation operates in:
+
+- **Model:** `esm2_t33_650M_UR50D`
+- **Layer used:** 28  
+- **Original embedding dimension:** 1280  
+- **PCA projection:** 640 principal components  
+- **Segment-based pooling:** 24 segments  
+- **Similarity metric:** cosine similarity in pooled PCA space  
+
+The PCA model must already be fitted and stored at:
+../pca/joblibs/Total_ipca_fitted.joblib
 
 
-####  Algorithm Details
+---
 
-- **Mutations per step:** `K_PROPOSALS = 8`
-- **Insertion/deletion rate:** 1% each
-- **Scoring model:** `BLOSUM62`, temperature = 1.7
-- **Selection:** Choose randomly from **TOP_M = 4** top candidates
-- **Acceptance rule:**
-    - If Δ(cosine) > 0 → accept
-    - If Δ(cosine) < 0 → accept with **Metropolis criterion** (β = 800)
-- If similarity plateaus for **lookback = 80** steps → reduce β to 100 to escape local minima
+## Embedding Pipeline
+
+For each sequence:
+
+1. Forward pass through ESM-2 (layer 28).
+2. Remove CLS/EOS tokens.
+3. Apply PCA transformation on GPU:
+   \[
+   X_{PCA} = (X - \mu) W^T
+   \]
+4. Divide the sequence into 24 equal-length segments.
+5. Perform mean pooling inside each segment.
+6. Flatten the pooled matrix into a vector of size:
+   \[
+   24 \times 640
+   \]
+
+All operations (ESM forward, PCA projection, and pooling) are executed on GPU.
+
+---
+
+## Mutation Model
+
+Each MCMC step generates:
+
+- `K_PROPOSALS = 8` candidate sequences
+
+Mutation types:
+
+| Type | Probability |
+|------|------------|
+| Substitution | 98% |
+| Insertion | 1% |
+| Deletion | 1% |
+
+### Substitutions
+
+- Scored using **BLOSUM62**
+- Boltzmann-weighted sampling
+- Temperature: `T = 1.7`
+- Self-mutations are explicitly excluded
+
+This produces biologically plausible mutations while maintaining sufficient exploration.
+
+---
+
+## Selection Strategy
+
+For each step:
+
+1. Compute cosine similarity of all 8 candidates.
+2. Rank them.
+3. Keep the top `TOP_M = 4`.
+4. If any candidate improves similarity → choose randomly among improving ones.
+5. Otherwise → choose randomly among the top 4.
+
+This hybrid strategy balances exploitation and controlled exploration.
+
+---
+
+## Acceptance Rule (Metropolis Criterion)
+
+Let:
+
+\[
+\Delta = \text{sim}_{next} - \text{sim}_{current}
+\]
+
+- If Δ ≥ 0 → always accept  
+- If Δ < 0 → accept with probability:
+
+\[
+P = e^{\beta \Delta}
+\]
+
+Default: beta_orig = 800
 
 
-####  Simulation Parameters
+### Plateau Escape Mechanism
 
-- Default steps: **7,500**
-- Convergence typically around steps **4,000–5,000**
-- Saves sequences with **cosine similarity > 0.90**
+If the mean similarity increase over the last: lookback = 80 steps
 
-Each run generates:
+is ≤ 0 (chain stagnation), then: beta = beta_orig / 8
 
-- A **graph** of the Markov chain (≈10 min)
-- A **.txt file** with high-similarity sequences
-- Stored under: `ESM_analyzer/markov/runs/`
 
->  If the folder lacks a `.txt` file, the simulation did not reach 0.9 similarity.
+This reduces selection pressure and enables escape from local minima.
 
-***
+---
 
-###  Performance Benchmarks
+## Simulation Parameters
 
-| Device | GPU RAM | Speed (100 steps, k=8, m=4) |
-| :-- | :-- | :-- |
-| RTX 3070 Laptop | 8 GB | ~40 s |
-| RTX 3060 Desktop | 12 GB | ~48 s |
-| Kaggle Notebook (2×T4 GPUs) | max 15 Gb per GPU (?) | ~100 s |
+| Parameter | Value |
+|------------|--------|
+| Steps | 7500 |
+| Segment count | 24 |
+| PCA components | 640 |
+| Save threshold | 0.90 cosine |
+
+Convergence typically occurs between 4000–5000 steps.
+
+---
+
+## Initialization
+
+- Target: fixed TonB wild-type sequence  
+- Starting point: random sequence of identical length  
+
+---
+
+## Output
+
+Each run generates a timestamped folder: markov/runs/<timestamp>/
+
+Containing:
+
+### 1. High-similarity sequences
+
+File: sequences_over_0.9_<timestamp>.txt
+
+Sequences are saved whenever: cosine_similarity > 0.90
+
+Each entry includes:
+
+- Step number  
+- Cosine similarity  
+- Sequence length  
+- Amino acid sequence  
+
+---
+
+### 2. Similarity trajectory plot
+
+File: similarity_plot_<timestamp>.png
+
+
+The plot shows:
+
+- Cosine similarity vs. step  
+- Green markers → accepted moves  
+- Red markers → rejected proposals  
+
+---
+
+## Computational Performance
+
+- Fully GPU-accelerated (ESM + PCA + pooling)  
+- CUDA automatically used if available  
+- GPU memory cleared between cycles  
+
+---
+
+## Execution
+
+Run:
+
+```bash
+python3 chain_cycle.py
+
+
+# Stage 2 — `chain_ultra_optimized.py`
+
+## Overview
+
+This script performs a **second-stage fine-tuning** starting from the best sequences obtained with `chain_cycle.py`.
+
+While Stage 1 performs global exploration from random sequences, this stage operates in a **high-similarity regime (>0.98)** and focuses on ultra-precise optimization toward the TonB target.
+
+The workflow is:
+
+1. Parse all `markov/runs/` folders.
+2. Extract the best high-similarity sequences from each run.
+3. Use them as **seeds** for a high-pressure refinement MCMC.
+4. Push similarity beyond **0.99+** using adaptive temperature and increasing selection pressure.
+
+---
+
+## Automatic Seed Extraction
+
+Before fine-tuning, the script scans: ./runs/
+
+For files: sequences_over_<threshold>_<timestamp>.txt
+
+
+For each run:
+
+- Extract sequences with `cosine_to_tonb > 0.98`
+- Keep only the top sequence per run
+- Remove duplicates
+- Save everything into: best_sequences_from_runs.txt
+
+
+This ensures that fine-tuning starts only from already optimized candidates.
+
+---
+
+## Model & Embedding Setup
+
+Same embedding pipeline as Stage 1, with two key optimizations:
+
+- **Model precision:** FP16 (half precision) for ESM-2
+- **PCA + pooling:** FP32 for numerical stability
+- **Layer:** 28
+- **Segments:** 24
+- **PCA components:** 640
+
+All heavy computations are GPU-accelerated.
+
+---
+
+## Fine-Tuning Hyperparameters
+
+| Parameter | Value |
+|------------|--------|
+| Steps | 6000 |
+| Proposals per step | 32 |
+| Initial β | 5000 |
+| Final β | 20000 |
+| Record threshold | 0.992 |
+
+Selection pressure increases linearly during the run:
+
+\[
+\beta(t) = \beta_{start} + (\beta_{max} - \beta_{start}) \cdot \frac{t}{N_{steps}}
+\]
+
+This creates a gradual transition from exploration to near-deterministic optimization.
+
+---
+
+## Adaptive Mutation Strategy
+
+Only substitutions are used in this stage (no insertions/deletions).
+
+Mutation temperature adapts to similarity:
+
+| Similarity | Temperature |
+|------------|-------------|
+| > 0.99 | 0.8 |
+| > 0.98 | 1.0 |
+
+Additionally, temperature decreases smoothly over time:
+
+\[
+T(t) = 1.5 - progress
+\]
+
+This produces:
+
+- Early stage → moderate exploration  
+- Late stage → extremely local refinement  
+
+---
+
+## Selection & Acceptance
+
+At each step:
+
+1. Generate `K_PROPOSALS = 32` mutated candidates.
+2. Compute embeddings in batch.
+3. Select the best candidate in the batch (greedy pre-selection).
+4. Apply Metropolis acceptance:
+
+If:
+\[
+\Delta > 0
+\]
+→ always accept.
+
+Else:
+\[
+P = e^{\beta \Delta}
+\]
+
+Because β becomes very large near the end, the process becomes effectively greedy.
+
+---
+
+## Output Structure
+
+Each seed generates a dedicated folder: runs_ultra_optimized/seed<idx>_<timestamp>/
+
+
+Containing:
+
+### 1. `best_candidates.fasta`
+
+Sequences saved when:
+
+- Similarity improves local best
+- OR similarity exceeds `0.992`
+
+Header format: step_<n>sim<score> mutation_info
+
+
+---
+
+### 2. `trajectory.png`
+
+Plot of cosine similarity vs. step.
+
+Includes:
+
+- Full similarity trajectory
+- Horizontal line at `0.992`
+
+---
+
+### 3. `finetune_log.txt`
+
+Initialization info and basic run details.
+
+---
+
+## Conceptual Differences from Stage 1
+
+| Stage 1 | Stage 2 |
+|----------|----------|
+| Global exploration | Local refinement |
+| Random initialization | High-quality seeds |
+| 8 proposals | 32 proposals |
+| β ≈ 800 | β up to 20000 |
+| Insertions & deletions allowed | Substitutions only |
+| Plateau escape mechanism | Deterministic pressure ramp |
+
+Stage 2 behaves like an **embedding-space endgame optimizer**, operating near the semantic basin of the wild-type protein.
+
+---
+
+## Execution
+
+After completing several `chain_cycle.py` runs:
+
+```bash
+python3 chain_ultra_optimized.py
 
 
 ***
