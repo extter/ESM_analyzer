@@ -198,9 +198,13 @@ def step_single_run_analysis(dirs):
     for aln_path in tqdm(aln_files, desc="Generazione Heatmap"):
         results, freqs = analyze_msa(aln_path)
         if results:
-            plt.figure(figsize=(20, 8))
-            sns.heatmap(freqs.T, cmap='plasma', vmin=0, vmax=1, yticklabels=list(AA_ORDER), xticklabels=False)
-            plt.title(f"{results['run_id']}\nC_mean={results['C_mean']:.3f} | H_mean={results['H_mean']:.3f}")
+            plt.figure(figsize=(12, 6))
+            ax = sns.heatmap(freqs.T, cmap='plasma', vmin=0, vmax=1, yticklabels=list(AA_ORDER), xticklabels=50)
+            plt.title(f"C_mean={results['C_mean']:.3f} | H_mean={results['H_mean']:.3f}", size=12, pad=8)
+            plt.xticks(fontsize=10, rotation=0) 
+            plt.yticks(fontsize=10, rotation=0)
+            cbar = ax.collections[0].colorbar
+            cbar.ax.tick_params(labelsize=10)
             plt.tight_layout()
             plt.savefig(dirs['heatmaps'] / f"{results['run_id']}_heatmap.png", dpi=300, bbox_inches='tight')
             plt.close()
@@ -337,9 +341,9 @@ def step_global_consensus_and_plot(dirs, title_suffix):
 
     ax.set_xlim(0, 240)
     ax.set_ylim(0, 115)
-    ax.set_xlabel("Residue Position", fontsize=12)
-    ax.set_ylabel("Consensus Support (%)", fontsize=12)
-    ax.set_title(f"ESM-2 Evolutionary Landscape of TonB {title_suffix}", fontsize=14, fontweight='bold')
+    ax.set_xlabel("Residue Position", fontsize=14)
+    ax.set_ylabel("Consensus Support (%)", fontsize=14)
+    ax.set_title(f"ESM-2 Evolutionary Landscape of TonB", fontsize=18, fontweight='bold')
 
     legend_patches = [
         mpatches.Patch(color='#4d4d4d', label='Conserved (High Confidence)'),
