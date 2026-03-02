@@ -3,7 +3,7 @@
 
 # ESM Analyzer — TonB (and maybe DNAjb1) Protein Embedding \& Evolution Simulation
 
-## Preliminary Setup
+## Preliminary Setup (old, could require some new dependencies)
 
 Before running any scripts, set up your environment with the following commands:
 
