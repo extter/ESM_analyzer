@@ -114,6 +114,58 @@ for rec in records:
         if len(x_f) > 0: flex_data.append({"Type": tipo, "x": x_f, "y": y_f})
 
 df_global = pd.DataFrame(global_features)
+# Estrai il numero dopo "seed"
+df_global["Run"] = (
+    df_global["ID"]
+    .str.extract(r'seed(\d+)')[0]
+)
+
+df_global["Run"] = (
+    df_global["ID"]
+    .str.extract(r'seed(\d+)')[0]
+    .astype("Int64")   # intero con supporto a NA
+)
+df_global = df_global.sort_values("Run")
+
+
+uniref_records = list(SeqIO.parse("../../../pca/datasets/uniref50_subsample.fasta", "fasta"))
+
+valid_aa = set("ACDEFGHIKLMNPQRSTVWY")
+
+background_features = []
+
+for rec in uniref_records:
+    seq = str(rec.seq).upper().replace("-", "")
+    
+    # Escludi sequenze con amminoacidi non standard
+    if not set(seq).issubset(valid_aa):
+        continue
+    
+    feats = extract_global_features(seq)
+    if feats:
+        feats["ID"] = rec.id
+        background_features.append(feats)
+
+print(f"Sequenze valide nel background: {len(background_features)}")
+
+
+df_background = pd.DataFrame(background_features)
+
+df_background.describe(percentiles=[0.01, 0.05, 0.95, 0.99])
+
+# Solo sequenze generate (escludo WT)
+df_generated = df_global[df_global["Type"] == "Generated (ESM-2)"].copy()
+df_generated["Group"] = "Generated"
+
+df_background["Group"] = "Background"
+
+# Mantieni solo colonne utili
+cols = ["Isoelectric_Point", "Instability_Index", "GRAVY", "Group"]
+
+df_plot = pd.concat([
+    df_generated[cols],
+    df_background[cols]
+], ignore_index=True)
 
 # -----------------------------------------------------------------------------
 # PLOT 1: PROFILI LOCALI (3 Grafici Separati)
@@ -176,29 +228,50 @@ metrics = [
 ]
 
 wt_row = df_global[df_global["Type"] == "Wild Type"].iloc[0]
+import matplotlib.patches as mpatches
+import matplotlib.lines as mlines
 
-for i, (col, title, desc) in enumerate(metrics):
+metrics = ["Isoelectric_Point", "Instability_Index", "GRAVY"]
+
+fig, axes = plt.subplots(1, 3, figsize=(18,6))
+
+# Usa tutte le sequenze generate non WT
+df_gen = df_global[df_global["Type"] == "Generated (ESM-2)"].copy()
+
+for i, col in enumerate(metrics):
     ax = axes[i]
     
-    sns.stripplot(
-        data=df_global[df_global["Type"] == "Generated (ESM-2)"], 
-        y=col, color="#1f77b4", alpha=0.5, size=8, ax=ax, jitter=True
-    )
+    # Boxplot background UniRef50
+    sns.boxplot(y=df_background[col], color="#cccccc", ax=ax, zorder=1)
     
-    ax.scatter(0, wt_row[col], color='#d62728', marker='*', s=400, edgecolor='black', zorder=10, label="TonB WT")
+    # Punti blu delle run ESM-2 (senza boxplot)
+    sns.stripplot(y=df_gen[col], color="#1f77b4", size=8, ax=ax, jitter=True, zorder=2)
+    
+    # Linea TonB WT
+    wt_value = df_global[df_global["Type"]=="Wild Type"][col].values[0]
+    ax.axhline(wt_value, color='#d62728', linewidth=3, zorder=3)
+    
+    # Soglia Instability Index
+    if col == "Instability_Index":
+        ax.axhline(40, color='green', linestyle='--', linewidth=2, zorder=3)
+    
+    # Proxy artists per legenda
+    background_patch = mpatches.Patch(color="#cccccc", label="UniRef50 Background")
+    generated_marker = mlines.Line2D([], [], color="#1f77b4", marker="o", linestyle="None",
+                                     markersize=8, label="Generated Runs")
+    wt_line = mlines.Line2D([], [], color='#d62728', linewidth=3, label="TonB WT")
+    handles = [background_patch, generated_marker, wt_line]
     
     if col == "Instability_Index":
-        ax.axhline(40, color='red', linestyle=':', label='Stability Threshold (40)')
+        threshold_line = mlines.Line2D([], [], color='green', linestyle="--", linewidth=2,
+                                       label="Stability Threshold (40)")
+        handles.append(threshold_line)
+    
+    ax.legend(handles=handles, fontsize=12)
+    ax.set_title(col, fontweight='bold', fontsize=16)
+    ax.set_ylabel(col, fontsize=14)
+    ax.set_xticks([])
 
-    ax.set_title(title, fontweight='bold', fontsize=18)
-    ax.set_ylabel(desc, fontsize=15)
-    ax.tick_params(axis='y', labelsize=15)
-    ax.set_xticks([]) 
-    ax.legend(loc="best", fontsize = 15)
-
-plt.suptitle("Global Biochemical Properties: ESM-2 Optimized vs Wild Type", fontsize=20, fontweight='bold')
 plt.tight_layout()
 plt.savefig(f"{OUTPUT_DIR}/2_Global_Metrics_Boxplots.png", dpi=300)
-plt.close()
-
-print(f"Analisi conclusa! Trovi i grafici aggiornati in: {OUTPUT_DIR}")
+plt.show()
