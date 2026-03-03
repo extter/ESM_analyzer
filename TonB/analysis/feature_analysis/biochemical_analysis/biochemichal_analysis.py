@@ -180,15 +180,6 @@ wt_row = df_global[df_global["Type"] == "Wild Type"].iloc[0]
 for i, (col, title, desc) in enumerate(metrics):
     ax = axes[i]
     
-    sns.boxplot(
-        data=df_global[df_global["Type"] == "Generated (ESM-2)"], 
-        y=col, color="white", ax=ax, width=0.8, showfliers=False,
-        boxprops=dict(edgecolor='#1f77b4', linewidth=4),
-        whiskerprops=dict(color='#1f77b4', linewidth=4),
-        capprops=dict(color='#1f77b4', linewidth=4),
-        medianprops=dict(color='#1f77b4', linewidth=4)
-    )
-    
     sns.stripplot(
         data=df_global[df_global["Type"] == "Generated (ESM-2)"], 
         y=col, color="#1f77b4", alpha=0.5, size=8, ax=ax, jitter=True
