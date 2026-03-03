@@ -3,7 +3,7 @@
 
 # ESM Analyzer — TonB (and maybe DNAjb1) Protein Embedding \& Evolution Simulation
 
-## Preliminary Setup
+## Preliminary Setup (old, could require some new dependencies)
 
 Before running any scripts, set up your environment with the following commands:
 
@@ -55,8 +55,8 @@ Performs **Principal Component Analyses (PCA)** on four datasets:
 3. TonB mutations
 4. Combined dataset (50k samples from each)
 
-Datasets are stored in:
-`ESM_analyzer/pca/datasets/`
+Datasets are stored in (change protein_folder with tonb or dnajb1) :
+`ESM_analyzer/protein_folder/pca/datasets/`
 
 ####  Datasets
 
